@@ -3,17 +3,14 @@ import type { DataSanitizationResult } from "../../../../types/sanitization.js";
 import type { ZodRequestBody } from "@asteasolutions/zod-to-openapi";
 
 export abstract class RequestBodyReader<Out> {
-  abstract readonly mimeType: MimeType
-  readonly description: string
-  readonly openApiDefinition: ZodRequestBody | undefined
+  abstract readonly mimeType: MimeType;
+  readonly description: string;
+  readonly openApiDefinition: ZodRequestBody | undefined;
 
-  protected constructor(
-    description: string,
-    openApiDefinition: ZodRequestBody | undefined
-  ) {
-    this.description = description
-    this.openApiDefinition = openApiDefinition
+  protected constructor(description: string, openApiDefinition: ZodRequestBody | undefined) {
+    this.description = description;
+    this.openApiDefinition = openApiDefinition;
   }
 
-  abstract parse(input?: Blob): Promise<DataSanitizationResult<Out>>
+  abstract parse(input?: Blob): Promise<DataSanitizationResult<Out>>;
 }

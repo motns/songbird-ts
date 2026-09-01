@@ -8,22 +8,22 @@ export const httpMethod = {
   OPTIONS: "options",
   TRACE: "trace",
   QUERY: "query",
-} as const
+} as const;
 
-export type HttpMethod = (typeof httpMethod)[keyof typeof httpMethod]
+export type HttpMethod = (typeof httpMethod)[keyof typeof httpMethod];
 
 const httpMethodLookup: Map<string, HttpMethod> = new Map(
-  Object.entries(httpMethod).map(([k, v]) => [v, k as HttpMethod])
-)
+  Object.entries(httpMethod).map(([k, v]) => [v, k as HttpMethod]),
+);
 
 export function httpMethodFromStr(str: string): HttpMethod {
-  const strLower = str.toLowerCase()
+  const strLower = str.toLowerCase();
 
   if (httpMethodLookup.has(strLower)) {
-    return httpMethodLookup.get(strLower)!
+    return httpMethodLookup.get(strLower)!;
   }
 
-  throw new Error(`Unknown HTTP method: ${strLower}`)
+  throw new Error(`Unknown HTTP method: ${strLower}`);
 }
 
 export const httpRequestHeader = {
@@ -88,10 +88,9 @@ export const httpRequestHeader = {
   X_REQUESTED_WITH: "x-requested-with",
   X_UIDH: "x-uidh",
   X_WAP_PROFILE: "x-wap-profile",
-} as const
+} as const;
 
-export type HttpRequestHeader = (typeof httpRequestHeader)[keyof typeof httpRequestHeader]
-
+export type HttpRequestHeader = (typeof httpRequestHeader)[keyof typeof httpRequestHeader];
 
 export const httpResponseHeader = {
   /**
@@ -159,10 +158,9 @@ export const httpResponseHeader = {
   X_CORRELATION_ID: "x-correlation-id",
   X_UA_COMPATIBLE: "x-ua-compatible",
   X_XSS_PROTECTION: "x-xss-protection",
-} as const
+} as const;
 
-export type HttpResponseHeader = (typeof httpResponseHeader)[keyof typeof httpResponseHeader]
-
+export type HttpResponseHeader = (typeof httpResponseHeader)[keyof typeof httpResponseHeader];
 
 export const httpStatus = {
   CONTINUE: 100,
@@ -226,6 +224,6 @@ export const httpStatus = {
   BANDWIDTH_LIMIT_EXCEEDED: 509,
   NOT_EXTENDED: 510,
   NETWORK_AUTHENTICATION_REQUIRED: 511,
-} as const
+} as const;
 
-export type HttpStatus = (typeof httpStatus)[keyof typeof httpStatus]
+export type HttpStatus = (typeof httpStatus)[keyof typeof httpStatus];

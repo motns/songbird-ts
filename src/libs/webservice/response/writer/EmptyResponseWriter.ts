@@ -2,10 +2,10 @@ import { ResponseBodyWriter } from "./ResponseBodyWriter.js";
 import { type MimeType, mimeTypes } from "../../../../enums/mime.js";
 
 export class EmptyResponseWriter extends ResponseBodyWriter<unknown, null> {
-  override readonly mimeType: MimeType = mimeTypes.TXT // Dummy value
+  override readonly mimeType: MimeType = mimeTypes.TXT; // Dummy value
 
   constructor() {
-    super("", undefined)
+    super("", undefined);
   }
 
   override serialise(_input?: any): null {
@@ -13,4 +13,4 @@ export class EmptyResponseWriter extends ResponseBodyWriter<unknown, null> {
   }
 }
 
-export const emptyResponseWriter = new EmptyResponseWriter()
+export const emptyResponseWriter = new EmptyResponseWriter();

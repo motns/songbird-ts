@@ -2,9 +2,12 @@ import type { RouteParamOutputType } from "../../../types/urlUtils.js";
 import { routePatternToExpressRoute, routePatternToOpenAPIPath } from "../../urlUtils.js";
 import type {
   CookieDefinitions,
-  EndpointParamType, EndpointParamZodType,
-  EndpointSchemas, PathParamZodType,
-  ResponseHeadersType, ResponseHeaderZodType
+  EndpointParamType,
+  EndpointParamZodType,
+  EndpointSchemas,
+  PathParamZodType,
+  ResponseHeadersType,
+  ResponseHeaderZodType,
 } from "../../../types/webservice.js";
 import * as z from "zod";
 import { RequestBodyReader } from "../request/reader/RequestBodyReader.js";
@@ -26,7 +29,6 @@ import { JsonBodyReader } from "../request/reader/JsonBodyReader.js";
 import { DefaultErrorHandler, type ErrorHandler } from "./ErrorHandler.js";
 import { type Logger, SilentLogger } from "../../Logger.js";
 import { httpStatus, type HttpStatus } from "../../../enums/http.js";
-
 
 /**
  * Base class for building REST endpoint definitions, used to describe schemas for all components of both
@@ -58,17 +60,17 @@ export class RestEndpointConfig<
    * @example <caption>Route pattern with typed parameters</caption>
    * /users/:userid<number>
    */
-  readonly routePattern: Route
+  readonly routePattern: Route;
 
   /**
    * @public Same format as `routePattern`, but with type annotations stripped out
    */
-  readonly expressRoute: string
+  readonly expressRoute: string;
 
   /**
    * @public Based on `routePattern`, but with type annotations stripped out and reformatted to match OpenAPI path format
    */
-  readonly openApiPath: string
+  readonly openApiPath: string;
 
   /**
    * @public Zod Schemas for all request and response components for this endpoint
@@ -80,44 +82,47 @@ export class RestEndpointConfig<
     EndpointParamZodType<RequestCookies>,
     ResponseHeaderZodType<SuccessResponseHeaders>,
     ResponseHeaderZodType<ErrorResponseHeaders>
-  >
+  >;
 
   /**
    * `name => description` map of cookies returned on endpoint success
    */
-  readonly successResponseCookies: SuccessResponseCookies
+  readonly successResponseCookies: SuccessResponseCookies;
 
   /**
    * `name => description` map of cookies returned on endpoint failure
    */
-  readonly errorResponseCookies: ErrorResponseCookies
+  readonly errorResponseCookies: ErrorResponseCookies;
 
-  readonly requestBodyReader: RequestBodyReader<RequestParserOut>
+  readonly requestBodyReader: RequestBodyReader<RequestParserOut>;
 
-  readonly successResponseWriter: ResponseBodyWriter<SuccessResponseWriterIn, SuccessResponseWriterOut>
+  readonly successResponseWriter: ResponseBodyWriter<
+    SuccessResponseWriterIn,
+    SuccessResponseWriterOut
+  >;
 
-  readonly errorMessageWriter: ResponseBodyWriter<ErrorMessage, ErrorResponseWriterOut>
+  readonly errorMessageWriter: ResponseBodyWriter<ErrorMessage, ErrorResponseWriterOut>;
 
-  readonly validationErrorWriter: ResponseBodyWriter<RequestValidationErrors, ErrorResponseWriterOut>
+  readonly validationErrorWriter: ResponseBodyWriter<
+    RequestValidationErrors,
+    ErrorResponseWriterOut
+  >;
 
   /**
    * Used to construct Songbird error responses with cookies and headers included - needs to be replaced with a custom
    * instance if ErrorResponseHeaders or ErrorResponseCookies are not empty.
    */
-  readonly errorHandler: ErrorHandler<
-    ErrorResponseHeaders,
-    ErrorResponseCookies
-  >
+  readonly errorHandler: ErrorHandler<ErrorResponseHeaders, ErrorResponseCookies>;
 
   /**
    * Logger instance which will be used by the framework internally
    */
-  readonly logger: Logger
+  readonly logger: Logger;
 
   /**
    * @public The HTTP status code returned when the request is successful - defaults to 200 OK
    */
-  readonly successHttpStatus: HttpStatus
+  readonly successHttpStatus: HttpStatus;
 
   constructor(
     routePattern: Route,
@@ -135,33 +140,28 @@ export class RestEndpointConfig<
     errorMessageWriter: ResponseBodyWriter<ErrorMessage, ErrorResponseWriterOut>,
     validationErrorWriter: ResponseBodyWriter<RequestValidationErrors, ErrorResponseWriterOut>,
     errorResponseCookies: ErrorResponseCookies,
-    errorHandler: ErrorHandler<
-      ErrorResponseHeaders,
-      ErrorResponseCookies
-    >,
+    errorHandler: ErrorHandler<ErrorResponseHeaders, ErrorResponseCookies>,
     logger: Logger,
-    successHttpStatus: HttpStatus
+    successHttpStatus: HttpStatus,
   ) {
-    this.routePattern = routePattern
-    this.expressRoute = routePatternToExpressRoute(routePattern)
-    this.openApiPath = routePatternToOpenAPIPath(routePattern)
-    this.schemas = schemas
-    this.requestBodyReader = requestReader
-    this.successResponseWriter = successResponseWriter
-    this.successResponseCookies = successResponseCookies
-    this.errorMessageWriter = errorMessageWriter
-    this.validationErrorWriter = validationErrorWriter
-    this.errorResponseCookies = errorResponseCookies
-    this.errorHandler = errorHandler
-    this.logger = logger
-    this.successHttpStatus = successHttpStatus
+    this.routePattern = routePattern;
+    this.expressRoute = routePatternToExpressRoute(routePattern);
+    this.openApiPath = routePatternToOpenAPIPath(routePattern);
+    this.schemas = schemas;
+    this.requestBodyReader = requestReader;
+    this.successResponseWriter = successResponseWriter;
+    this.successResponseCookies = successResponseCookies;
+    this.errorMessageWriter = errorMessageWriter;
+    this.validationErrorWriter = validationErrorWriter;
+    this.errorResponseCookies = errorResponseCookies;
+    this.errorHandler = errorHandler;
+    this.logger = logger;
+    this.successHttpStatus = successHttpStatus;
   }
 
-  route<
-    NewRoute extends string
-  >(
+  route<NewRoute extends string>(
     newRoute: NewRoute,
-    newSchema: PathParamZodType<RouteParamOutputType<NewRoute>>
+    newSchema: PathParamZodType<RouteParamOutputType<NewRoute>>,
   ): RestEndpointConfig<
     NewRoute,
     RouteParamOutputType<NewRoute>,
@@ -181,7 +181,7 @@ export class RestEndpointConfig<
       newRoute,
       {
         ...this.schemas,
-        pathParams: newSchema
+        pathParams: newSchema,
       },
       this.requestBodyReader,
       this.successResponseWriter,
@@ -192,13 +192,11 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
-  queryParams<
-    NewQueryParams extends EndpointParamType
-  >(
-    newSchema: EndpointParamZodType<NewQueryParams>
+  queryParams<NewQueryParams extends EndpointParamType>(
+    newSchema: EndpointParamZodType<NewQueryParams>,
   ): RestEndpointConfig<
     Route,
     PathParams,
@@ -217,8 +215,8 @@ export class RestEndpointConfig<
     return new RestEndpointConfig(
       this.routePattern,
       {
-          ...this.schemas,
-          queryParams: newSchema
+        ...this.schemas,
+        queryParams: newSchema,
       },
       this.requestBodyReader,
       this.successResponseWriter,
@@ -229,7 +227,7 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   noQueryParams(): RestEndpointConfig<
@@ -251,7 +249,7 @@ export class RestEndpointConfig<
       this.routePattern,
       {
         ...this.schemas,
-        queryParams: z.object({})
+        queryParams: z.object({}),
       },
       this.requestBodyReader,
       this.successResponseWriter,
@@ -262,14 +260,11 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
-
-  requestHeaders<
-    NewRequestHeaders extends EndpointParamType
-  >(
-    newSchema: EndpointParamZodType<NewRequestHeaders>
+  requestHeaders<NewRequestHeaders extends EndpointParamType>(
+    newSchema: EndpointParamZodType<NewRequestHeaders>,
   ): RestEndpointConfig<
     Route,
     PathParams,
@@ -289,7 +284,7 @@ export class RestEndpointConfig<
       this.routePattern,
       {
         ...this.schemas,
-        requestHeaders: newSchema
+        requestHeaders: newSchema,
       },
       this.requestBodyReader,
       this.successResponseWriter,
@@ -300,7 +295,7 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   noRequestHeaders(): RestEndpointConfig<
@@ -322,7 +317,7 @@ export class RestEndpointConfig<
       this.routePattern,
       {
         ...this.schemas,
-        requestHeaders: z.object({})
+        requestHeaders: z.object({}),
       },
       this.requestBodyReader,
       this.successResponseWriter,
@@ -333,13 +328,11 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
-  requestCookies<
-    NewRequestCookies extends EndpointParamType
-  >(
-    newSchema: EndpointParamZodType<NewRequestCookies>
+  requestCookies<NewRequestCookies extends EndpointParamType>(
+    newSchema: EndpointParamZodType<NewRequestCookies>,
   ): RestEndpointConfig<
     Route,
     PathParams,
@@ -359,7 +352,7 @@ export class RestEndpointConfig<
       this.routePattern,
       {
         ...this.schemas,
-        requestCookies: newSchema
+        requestCookies: newSchema,
       },
       this.requestBodyReader,
       this.successResponseWriter,
@@ -370,7 +363,7 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   noRequestCookies(): RestEndpointConfig<
@@ -392,7 +385,7 @@ export class RestEndpointConfig<
       this.routePattern,
       {
         ...this.schemas,
-        requestCookies: z.object({})
+        requestCookies: z.object({}),
       },
       this.requestBodyReader,
       this.successResponseWriter,
@@ -403,11 +396,11 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   requestBody<NewRequestReaderOut>(
-    newParser: RequestBodyReader<NewRequestReaderOut>
+    newParser: RequestBodyReader<NewRequestReaderOut>,
   ): RestEndpointConfig<
     Route,
     PathParams,
@@ -435,7 +428,7 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   jsonRequestBody<NewRequestReaderOut>(
@@ -459,10 +452,7 @@ export class RestEndpointConfig<
     return new RestEndpointConfig(
       this.routePattern,
       this.schemas,
-      new JsonBodyReader(
-        requestBodySchema,
-        description
-      ),
+      new JsonBodyReader(requestBodySchema, description),
       this.successResponseWriter,
       this.successResponseCookies,
       this.errorMessageWriter,
@@ -471,7 +461,7 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   noRequestBody(): RestEndpointConfig<
@@ -501,13 +491,11 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
-  responseHeaders<
-    NewResponseHeaders extends ResponseHeadersType
-  >(
-    newSchema: ResponseHeaderZodType<NewResponseHeaders>
+  responseHeaders<NewResponseHeaders extends ResponseHeadersType>(
+    newSchema: ResponseHeaderZodType<NewResponseHeaders>,
   ): RestEndpointConfig<
     Route,
     PathParams,
@@ -527,7 +515,7 @@ export class RestEndpointConfig<
       this.routePattern,
       {
         ...this.schemas,
-        successResponseHeaders: newSchema
+        successResponseHeaders: newSchema,
       },
       this.requestBodyReader,
       this.successResponseWriter,
@@ -538,7 +526,7 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   noResponseHeaders(): RestEndpointConfig<
@@ -560,7 +548,7 @@ export class RestEndpointConfig<
       this.routePattern,
       {
         ...this.schemas,
-        successResponseHeaders: z.object({})
+        successResponseHeaders: z.object({}),
       },
       this.requestBodyReader,
       this.successResponseWriter,
@@ -571,13 +559,11 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
-  responseCookies<
-    NewResponseCookies extends CookieDefinitions
-  >(
-    newCookies: NewResponseCookies
+  responseCookies<NewResponseCookies extends CookieDefinitions>(
+    newCookies: NewResponseCookies,
   ): RestEndpointConfig<
     Route,
     PathParams,
@@ -605,7 +591,7 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   noResponseCookies(): RestEndpointConfig<
@@ -635,16 +621,13 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
-  responseBody<
-    NewResponseWriterIn,
-    NewResponseWriterOut
-  >(
+  responseBody<NewResponseWriterIn, NewResponseWriterOut>(
     newBodyWriter: ResponseBodyWriter<NewResponseWriterIn, NewResponseWriterOut>,
     newErrorMessageWriter: ResponseBodyWriter<ErrorMessage, NewResponseWriterOut>,
-    newValidationErrorWriter: ResponseBodyWriter<RequestValidationErrors, NewResponseWriterOut>
+    newValidationErrorWriter: ResponseBodyWriter<RequestValidationErrors, NewResponseWriterOut>,
   ): RestEndpointConfig<
     Route,
     PathParams,
@@ -672,7 +655,7 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   noResponseBody(): RestEndpointConfig<
@@ -702,7 +685,7 @@ export class RestEndpointConfig<
       this.errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   jsonResponseBody<NewResponseWriterIn>(
@@ -727,7 +710,7 @@ export class RestEndpointConfig<
       new JsonResponseWriter(responseSchema, description),
       jsonErrorMessageWriter,
       jsonValidationErrorWriter,
-    )
+    );
   }
 
   xmlResponseBody<NewResponseWriterIn>(
@@ -752,12 +735,10 @@ export class RestEndpointConfig<
       new XMLResponseWriter(responseSchema, description),
       xmlErrorMessageWriter,
       xmlValidationErrorWriter,
-    )
+    );
   }
 
-  textResponseBody(
-    description?: string,
-  ): RestEndpointConfig<
+  textResponseBody(description?: string): RestEndpointConfig<
     Route,
     PathParams,
     QueryParams,
@@ -776,16 +757,16 @@ export class RestEndpointConfig<
       new TextResponseWriter(description),
       textErrorMessageWriter,
       textValidationErrorWriter,
-    )
+    );
   }
 
   withErrorHandler<
     NewErrorResponseHeaders extends ResponseHeadersType,
-    NewErrorResponseCookies extends CookieDefinitions
+    NewErrorResponseCookies extends CookieDefinitions,
   >(
     newErrorHeadersSchema: ResponseHeaderZodType<NewErrorResponseHeaders>,
     newErrorCookies: NewErrorResponseCookies,
-    errorHandler: ErrorHandler<NewErrorResponseHeaders, NewErrorResponseCookies>
+    errorHandler: ErrorHandler<NewErrorResponseHeaders, NewErrorResponseCookies>,
   ): RestEndpointConfig<
     Route,
     PathParams,
@@ -816,7 +797,7 @@ export class RestEndpointConfig<
       errorHandler,
       this.logger,
       this.successHttpStatus,
-    )
+    );
   }
 
   static create(): RestEndpointConfig<
@@ -867,6 +848,6 @@ export class RestEndpointConfig<
       new DefaultErrorHandler(),
       new SilentLogger(),
       httpStatus.OK,
-    )
+    );
   }
 }

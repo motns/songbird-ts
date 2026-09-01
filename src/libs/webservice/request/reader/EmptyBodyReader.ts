@@ -3,10 +3,10 @@ import type { DataSanitizationResult } from "../../../../types/sanitization.js";
 import { type MimeType, mimeTypes } from "../../../../enums/mime.js";
 
 export class EmptyBodyReader extends RequestBodyReader<null> {
-  readonly mimeType: MimeType = mimeTypes.TXT // Dummy value - won't really get used
+  readonly mimeType: MimeType = mimeTypes.TXT; // Dummy value - won't really get used
 
   constructor() {
-    super("", undefined)
+    super("", undefined);
   }
 
   parse(_input?: any): Promise<DataSanitizationResult<null>> {
@@ -14,4 +14,4 @@ export class EmptyBodyReader extends RequestBodyReader<null> {
   }
 }
 
-export const emptyBodyReader = new EmptyBodyReader()
+export const emptyBodyReader = new EmptyBodyReader();

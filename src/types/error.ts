@@ -1,3 +1,3 @@
 export type GenericErrorResponse = {
-  error: string
-}
+  error: string;
+};

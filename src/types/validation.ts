@@ -22,8 +22,8 @@ export const validationErrorSchema = z.object({
   code: z.string(),
   message: z.string(),
   params: z.record(z.string(), z.unknown()).optional(),
-})
-export type ValidationError = z.infer<typeof validationErrorSchema>
+});
+export type ValidationError = z.infer<typeof validationErrorSchema>;
 
 /**
  * Used to represent a collection of validation errors which apply to either a simple or a complex type, in a format which
@@ -87,20 +87,21 @@ export type ValidationError = z.infer<typeof validationErrorSchema>
  *   }]
  * }
  */
-export const complexTypeValidationErrorsSchema = z.object({
-  get properties() {
-    return z.record(z.string(), complexTypeValidationErrorsSchema).optional()
-  },
-  get items() {
-    return z.record(z.number(), complexTypeValidationErrorsSchema).optional()
-  },
-  errors: z.array(validationErrorSchema).optional(),
-})
+export const complexTypeValidationErrorsSchema = z
+  .object({
+    get properties() {
+      return z.record(z.string(), complexTypeValidationErrorsSchema).optional();
+    },
+    get items() {
+      return z.record(z.number(), complexTypeValidationErrorsSchema).optional();
+    },
+    errors: z.array(validationErrorSchema).optional(),
+  })
   // This schema is self-referential (see `properties`/`items` above). Without a stable ref ID here,
   // zod-to-openapi has no way to detect the cycle and recurses into it forever while generating the
   // OpenAPI document, overflowing the call stack.
-  .meta({ id: "ComplexTypeValidationErrors" })
-export type ComplexTypeValidationErrors = z.infer<typeof complexTypeValidationErrorsSchema>
+  .meta({ id: "ComplexTypeValidationErrors" });
+export type ComplexTypeValidationErrors = z.infer<typeof complexTypeValidationErrorsSchema>;
 
 /**
  * Base type for validation results. Instead of using this directly, use one of the concrete types below instead.
@@ -108,41 +109,36 @@ export type ComplexTypeValidationErrors = z.infer<typeof complexTypeValidationEr
  * @property {boolean} isValid Whether the validation was successful or not
  */
 export type ValidationResult = {
-  readonly isValid: boolean,
-}
+  readonly isValid: boolean;
+};
 
 /**
  * Returned by Validators to indicate that data has passed validation
  */
 export type ValidationSuccess = ValidationResult & {
-  readonly isValid: true,
-}
+  readonly isValid: true;
+};
 
 /**
  * Returned by Validators to indicate that data has failed validation
  */
 export type ComplexTypeValidationFailure = ValidationResult & {
-  readonly isValid: false,
-  readonly validationErrors: ComplexTypeValidationErrors,
-}
+  readonly isValid: false;
+  readonly validationErrors: ComplexTypeValidationErrors;
+};
 
 /**
  * Union type for representing Validator results
  */
-export type ComplexValidationResult = ValidationSuccess | ComplexTypeValidationFailure
+export type ComplexValidationResult = ValidationSuccess | ComplexTypeValidationFailure;
 
 /**
  * Used to represent a function for performing additional validations on a Request,
  * not covered by the initial validation/sanitization phase.
  */
-export type RequestValidatorFunction<
-  PathParams,
-  QueryParams,
-  Headers,
-  RequestBody
-> = (
+export type RequestValidatorFunction<PathParams, QueryParams, Headers, RequestBody> = (
   pathParams: PathParams,
   queryParams: QueryParams,
   headers: Headers,
   requestBody: RequestBody,
-) => Promise<ComplexValidationResult>
+) => Promise<ComplexValidationResult>;

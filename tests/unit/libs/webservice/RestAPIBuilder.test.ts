@@ -31,12 +31,14 @@ class BearerAuthenticator extends Authenticator<null> {
   }
 }
 
-function createEndpoint(overrides: {
-  operationId?: string,
-  method?: HttpMethod,
-  authenticator?: Authenticator<any>,
-  endpointConfig?: AnyRestEndpointConfig,
-} = {}) {
+function createEndpoint(
+  overrides: {
+    operationId?: string;
+    method?: HttpMethod;
+    authenticator?: Authenticator<any>;
+    endpointConfig?: AnyRestEndpointConfig;
+  } = {},
+) {
   return new RestEndpoint({
     operationId: overrides.operationId ?? "getUsers",
     docs: { endpointSummary: "Get users", endpointDescription: "Returns a list of users" },
@@ -72,16 +74,21 @@ describe("RestAPIBuilder", () => {
 
       const doc = builder.generateOpenAPIDocument();
 
-      expect((doc.paths?.["/"] as PathItemObject | undefined)?.get?.operationId).toEqual("listUsers");
-      expect((doc.paths?.["/other"] as PathItemObject | undefined)?.post?.operationId).toEqual("createUser");
+      expect((doc.paths?.["/"] as PathItemObject | undefined)?.get?.operationId).toEqual(
+        "listUsers",
+      );
+      expect((doc.paths?.["/other"] as PathItemObject | undefined)?.post?.operationId).toEqual(
+        "createUser",
+      );
     });
 
     it("throws when two endpoints are registered for the same method and path, even with different OperationIDs", () => {
       const builder = new RestAPIBuilder("API", "Description", "1.0.0");
       builder.addEndpoint(createEndpoint({ operationId: "getUsers" }));
 
-      expect(() => builder.addEndpoint(createEndpoint({ operationId: "listUsers" })))
-        .toThrow("Endpoint for route \"get /\" already exists");
+      expect(() => builder.addEndpoint(createEndpoint({ operationId: "listUsers" }))).toThrow(
+        'Endpoint for route "get /" already exists',
+      );
     });
 
     it("throws when two endpoints share the same OperationID, even on different routes", () => {
@@ -93,8 +100,9 @@ describe("RestAPIBuilder", () => {
         endpointConfig: RestEndpointConfig.create().route("/other", z.object({})),
       });
 
-      expect(() => builder.addEndpoint(otherRouteEndpoint))
-        .toThrow("Endpoint with OperationID \"getUsers\" already exists");
+      expect(() => builder.addEndpoint(otherRouteEndpoint)).toThrow(
+        'Endpoint with OperationID "getUsers" already exists',
+      );
     });
 
     it("throws when two request body schemas share an OpenAPI ref but are different Zod schemas", () => {
@@ -102,20 +110,25 @@ describe("RestAPIBuilder", () => {
       const otherUserSchema = z.object({ id: z.number() }).openapi("User");
 
       const builder = new RestAPIBuilder("API", "Description", "1.0.0");
-      builder.addEndpoint(createEndpoint({
-        operationId: "createUser",
-        method: "post",
-        endpointConfig: RestEndpointConfig.create().jsonRequestBody(userSchema),
-      }));
+      builder.addEndpoint(
+        createEndpoint({
+          operationId: "createUser",
+          method: "post",
+          endpointConfig: RestEndpointConfig.create().jsonRequestBody(userSchema),
+        }),
+      );
 
       const conflictingEndpoint = createEndpoint({
         operationId: "createOtherUser",
         method: "post",
-        endpointConfig: RestEndpointConfig.create().route("/other", z.object({})).jsonRequestBody(otherUserSchema),
+        endpointConfig: RestEndpointConfig.create()
+          .route("/other", z.object({}))
+          .jsonRequestBody(otherUserSchema),
       });
 
-      expect(() => builder.addEndpoint(conflictingEndpoint))
-        .toThrow("Schema reference \"User\" already exists with different Zod Schema");
+      expect(() => builder.addEndpoint(conflictingEndpoint)).toThrow(
+        'Schema reference "User" already exists with different Zod Schema',
+      );
     });
 
     it("throws when two success response schemas share an OpenAPI ref but are different Zod schemas", () => {
@@ -123,33 +136,42 @@ describe("RestAPIBuilder", () => {
       const otherUserSchema = z.object({ id: z.number() }).openapi("User");
 
       const builder = new RestAPIBuilder("API", "Description", "1.0.0");
-      builder.addEndpoint(createEndpoint({
-        operationId: "getUser",
-        endpointConfig: RestEndpointConfig.create().jsonResponseBody(userSchema),
-      }));
+      builder.addEndpoint(
+        createEndpoint({
+          operationId: "getUser",
+          endpointConfig: RestEndpointConfig.create().jsonResponseBody(userSchema),
+        }),
+      );
 
       const conflictingEndpoint = createEndpoint({
         operationId: "getOtherUser",
-        endpointConfig: RestEndpointConfig.create().route("/other", z.object({})).jsonResponseBody(otherUserSchema),
+        endpointConfig: RestEndpointConfig.create()
+          .route("/other", z.object({}))
+          .jsonResponseBody(otherUserSchema),
       });
 
-      expect(() => builder.addEndpoint(conflictingEndpoint))
-        .toThrow("Schema reference \"User\" already exists with different Zod Schema");
+      expect(() => builder.addEndpoint(conflictingEndpoint)).toThrow(
+        'Schema reference "User" already exists with different Zod Schema',
+      );
     });
 
     it("allows the same Zod schema instance to be reused under the same ref across endpoints", () => {
       const userSchema = z.object({ id: z.string() }).openapi("User");
 
       const builder = new RestAPIBuilder("API", "Description", "1.0.0");
-      builder.addEndpoint(createEndpoint({
-        operationId: "createUser",
-        method: "post",
-        endpointConfig: RestEndpointConfig.create().jsonRequestBody(userSchema),
-      }));
+      builder.addEndpoint(
+        createEndpoint({
+          operationId: "createUser",
+          method: "post",
+          endpointConfig: RestEndpointConfig.create().jsonRequestBody(userSchema),
+        }),
+      );
 
       const reusingEndpoint = createEndpoint({
         operationId: "getUser",
-        endpointConfig: RestEndpointConfig.create().route("/other", z.object({})).jsonResponseBody(userSchema),
+        endpointConfig: RestEndpointConfig.create()
+          .route("/other", z.object({}))
+          .jsonResponseBody(userSchema),
       });
 
       expect(() => builder.addEndpoint(reusingEndpoint)).not.toThrow();
@@ -160,15 +182,19 @@ describe("RestAPIBuilder", () => {
       const builder = new RestAPIBuilder("API", "Description", "1.0.0");
 
       builder.addEndpoint(createEndpoint({ operationId: "getUsers", authenticator }));
-      builder.addEndpoint(createEndpoint({
-        operationId: "getOtherUsers",
-        authenticator,
-        endpointConfig: RestEndpointConfig.create().route("/other", z.object({})),
-      }));
+      builder.addEndpoint(
+        createEndpoint({
+          operationId: "getOtherUsers",
+          authenticator,
+          endpointConfig: RestEndpointConfig.create().route("/other", z.object({})),
+        }),
+      );
 
       const doc = builder.generateOpenAPIDocument();
 
-      expect(doc.components?.securitySchemes).toEqual({ "bearer-auth": { type: "http", scheme: "bearer" } });
+      expect(doc.components?.securitySchemes).toEqual({
+        "bearer-auth": { type: "http", scheme: "bearer" },
+      });
     });
 
     it("does not register a security scheme for an authenticator without an OpenAPI definition", () => {
@@ -182,7 +208,12 @@ describe("RestAPIBuilder", () => {
 
     it("throws when two authenticators share a name but have different OpenAPI security definitions", () => {
       const builder = new RestAPIBuilder("API", "Description", "1.0.0");
-      builder.addEndpoint(createEndpoint({ operationId: "getUsers", authenticator: new BearerAuthenticator("shared-auth") }));
+      builder.addEndpoint(
+        createEndpoint({
+          operationId: "getUsers",
+          authenticator: new BearerAuthenticator("shared-auth"),
+        }),
+      );
 
       const conflictingEndpoint = createEndpoint({
         operationId: "getOtherUsers",
@@ -190,8 +221,9 @@ describe("RestAPIBuilder", () => {
         endpointConfig: RestEndpointConfig.create().route("/other", z.object({})),
       });
 
-      expect(() => builder.addEndpoint(conflictingEndpoint))
-        .toThrow("Security scheme \"shared-auth\" is already defined with a different definition");
+      expect(() => builder.addEndpoint(conflictingEndpoint)).toThrow(
+        'Security scheme "shared-auth" is already defined with a different definition',
+      );
     });
   });
 
@@ -203,7 +235,11 @@ describe("RestAPIBuilder", () => {
       const doc = builder.generateOpenAPIDocument();
 
       expect(doc.openapi).toEqual("3.1.0");
-      expect(doc.info).toEqual({ title: "My API", description: "My API description", version: "2.4.1" });
+      expect(doc.info).toEqual({
+        title: "My API",
+        description: "My API description",
+        version: "2.4.1",
+      });
     });
 
     it("returns a document with no paths when no endpoints have been added", () => {
@@ -230,17 +266,23 @@ describe("RestAPIBuilder", () => {
       const userSchema = z.object({ id: z.string() }).openapi("User");
       const otherUserSchema = z.object({ id: z.number() }).openapi("User");
 
-      const builder = new RestAPIBuilder("API", "Description", "1.0.0", { failOnDuplicateSchemaRef: false });
-      builder.addEndpoint(createEndpoint({
-        operationId: "createUser",
-        method: "post",
-        endpointConfig: RestEndpointConfig.create().jsonRequestBody(userSchema),
-      }));
+      const builder = new RestAPIBuilder("API", "Description", "1.0.0", {
+        failOnDuplicateSchemaRef: false,
+      });
+      builder.addEndpoint(
+        createEndpoint({
+          operationId: "createUser",
+          method: "post",
+          endpointConfig: RestEndpointConfig.create().jsonRequestBody(userSchema),
+        }),
+      );
 
       const conflictingEndpoint = createEndpoint({
         operationId: "createOtherUser",
         method: "post",
-        endpointConfig: RestEndpointConfig.create().route("/other", z.object({})).jsonRequestBody(otherUserSchema),
+        endpointConfig: RestEndpointConfig.create()
+          .route("/other", z.object({}))
+          .jsonRequestBody(otherUserSchema),
       });
 
       expect(() => builder.addEndpoint(conflictingEndpoint)).not.toThrow();

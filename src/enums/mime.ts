@@ -25,6 +25,6 @@ export const mimeTypes = {
   XLSX: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   XML: "application/xml",
   ZIP: "application/zip",
-} as const
+} as const;
 
-export type MimeType = (typeof mimeTypes)[keyof typeof mimeTypes]
+export type MimeType = (typeof mimeTypes)[keyof typeof mimeTypes];

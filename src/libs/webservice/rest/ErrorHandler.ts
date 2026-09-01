@@ -5,15 +5,18 @@ import { UnauthenticatedResponse } from "../response/UnauthenticatedResponse.js"
 import { UnauthorisedResponse } from "../response/UnauthorisedResponse.js";
 import type { RequestValidationErrors } from "../../../types/sanitization.js";
 
-
 export interface ErrorHandler<
   ErrorResponseHeaders extends ResponseHeadersType,
-  ErrorResponseCookies extends CookieDefinitions
+  ErrorResponseCookies extends CookieDefinitions,
 > {
-  handleBadRequest(validationErrors: RequestValidationErrors): BadRequestResponse<ErrorResponseHeaders, ErrorResponseCookies>
-  handleInternalError(error?: unknown | undefined): InternalErrorResponse<ErrorResponseHeaders, ErrorResponseCookies>
-  handleUnauthenticated(): UnauthenticatedResponse<ErrorResponseHeaders, ErrorResponseCookies>
-  handleUnauthorised(): UnauthorisedResponse<ErrorResponseHeaders, ErrorResponseCookies>
+  handleBadRequest(
+    validationErrors: RequestValidationErrors,
+  ): BadRequestResponse<ErrorResponseHeaders, ErrorResponseCookies>;
+  handleInternalError(
+    error?: unknown | undefined,
+  ): InternalErrorResponse<ErrorResponseHeaders, ErrorResponseCookies>;
+  handleUnauthenticated(): UnauthenticatedResponse<ErrorResponseHeaders, ErrorResponseCookies>;
+  handleUnauthorised(): UnauthorisedResponse<ErrorResponseHeaders, ErrorResponseCookies>;
 }
 
 export class DefaultErrorHandler implements ErrorHandler<
@@ -22,31 +25,21 @@ export class DefaultErrorHandler implements ErrorHandler<
 > {
   constructor() {}
 
-  handleBadRequest(validationErrors: RequestValidationErrors): BadRequestResponse<
-    Record<string, never>,
-    Record<string, never>
-  > {
-    return new BadRequestResponse({}, {}, validationErrors)
+  handleBadRequest(
+    validationErrors: RequestValidationErrors,
+  ): BadRequestResponse<Record<string, never>, Record<string, never>> {
+    return new BadRequestResponse({}, {}, validationErrors);
   }
 
-  handleInternalError(): InternalErrorResponse<
-    Record<string, never>,
-    Record<string, never>
-  > {
-    return new InternalErrorResponse({}, {})
+  handleInternalError(): InternalErrorResponse<Record<string, never>, Record<string, never>> {
+    return new InternalErrorResponse({}, {});
   }
 
-  handleUnauthenticated(): UnauthenticatedResponse<
-    Record<string, never>,
-    Record<string, never>
-  > {
-    return new UnauthenticatedResponse({}, {})
+  handleUnauthenticated(): UnauthenticatedResponse<Record<string, never>, Record<string, never>> {
+    return new UnauthenticatedResponse({}, {});
   }
 
-  handleUnauthorised(): UnauthorisedResponse<
-    Record<string, never>,
-    Record<string, never>
-  > {
-    return new UnauthorisedResponse({}, {})
+  handleUnauthorised(): UnauthorisedResponse<Record<string, never>, Record<string, never>> {
+    return new UnauthorisedResponse({}, {});
   }
 }

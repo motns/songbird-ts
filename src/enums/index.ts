@@ -1,2 +1,2 @@
-export * from "./http.js"
-export * from "./mime.js"
+export * from "./http.js";
+export * from "./mime.js";

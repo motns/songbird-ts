@@ -2,7 +2,6 @@ import { AuthenticatorBase } from "./AuthenticatorBase.js";
 import { z } from "zod";
 import type { SecuritySchemeObject } from "openapi3-ts/oas31";
 
-
 /**
  * This Authenticator is used to explicitly mark public endpoints, but it will not be added anywhere
  * in the OpenAPI output - instead we'll just put an empty array under SecurityRequirements for the Operation.
@@ -20,10 +19,10 @@ export class NoAuthenticator extends AuthenticatorBase<{}, {}, {}, {}, null> {
         return Promise.resolve({
           isValid: true,
           isAuthenticated: true,
-          output: null
-        })
-      }
-    )
+          output: null,
+        });
+      },
+    );
   }
 
   protected generateOpenApiDefinition(): SecuritySchemeObject | undefined {
@@ -31,4 +30,4 @@ export class NoAuthenticator extends AuthenticatorBase<{}, {}, {}, {}, null> {
   }
 }
 
-export const noAuthenticator = new NoAuthenticator()
+export const noAuthenticator = new NoAuthenticator();

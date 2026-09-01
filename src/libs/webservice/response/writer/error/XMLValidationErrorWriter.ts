@@ -1,4 +1,7 @@
-import { type RequestValidationErrors, requestValidationErrorsSchema } from "../../../../../types/sanitization.js";
+import {
+  type RequestValidationErrors,
+  requestValidationErrorsSchema,
+} from "../../../../../types/sanitization.js";
 import { XMLResponseWriter } from "../XMLResponseWriter.js";
 
 export class XMLValidationErrorWriter extends XMLResponseWriter<RequestValidationErrors> {
@@ -7,4 +10,4 @@ export class XMLValidationErrorWriter extends XMLResponseWriter<RequestValidatio
   }
 }
 
-export const xmlValidationErrorWriter = new XMLValidationErrorWriter()
+export const xmlValidationErrorWriter = new XMLValidationErrorWriter();

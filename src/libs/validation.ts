@@ -8,18 +8,13 @@ function mergeProperties(
   const both = Object.fromEntries(
     keys(a ?? {})
       .filter((k) => k in (b ?? {}))
-      .map((k) =>
-        [
-          k,
-          (a![k] && b![k]) && mergeComplexTypeValidationErrors(a![k], b![k])
-        ]
-      )
-  ) as Record<string, ComplexTypeValidationErrors>
+      .map((k) => [k, a![k] && b![k] && mergeComplexTypeValidationErrors(a![k], b![k])]),
+  ) as Record<string, ComplexTypeValidationErrors>;
   return {
     ...a,
     ...b,
-    ...both
-  }
+    ...both,
+  };
 }
 
 function mergeItems(
@@ -29,28 +24,25 @@ function mergeItems(
   const both = Object.fromEntries(
     keys(a ?? {})
       .filter((k) => k in (b ?? {}))
-      .map((k) =>
-        [
-          k,
-          (a![k] && b![k]) && mergeComplexTypeValidationErrors(a![k], b![k])
-        ]
-      )
-  ) as Record<number, ComplexTypeValidationErrors>
+      .map((k) => [k, a![k] && b![k] && mergeComplexTypeValidationErrors(a![k], b![k])]),
+  ) as Record<number, ComplexTypeValidationErrors>;
   return {
     ...a,
     ...b,
-    ...both
-  }
+    ...both,
+  };
 }
 
 export function mergeComplexTypeValidationErrors(
   a: ComplexTypeValidationErrors,
-  b: ComplexTypeValidationErrors
+  b: ComplexTypeValidationErrors,
 ): ComplexTypeValidationErrors {
-  if (!b) return a
+  if (!b) return a;
   return {
-    ...(a.properties || b.properties) && { properties: mergeProperties(a.properties, b.properties) },
-    ...(a.items || b.items) && { items: mergeItems(a.items, b.items) },
-    ...(a.errors || b.errors) && { errors: [...(a.errors ?? []), ...(b.errors ?? [])] }
-  }
+    ...((a.properties || b.properties) && {
+      properties: mergeProperties(a.properties, b.properties),
+    }),
+    ...((a.items || b.items) && { items: mergeItems(a.items, b.items) }),
+    ...((a.errors || b.errors) && { errors: [...(a.errors ?? []), ...(b.errors ?? [])] }),
+  };
 }

@@ -11,40 +11,22 @@ describe("Authorizer", () => {
       Record<string, never>,
       { role: string },
       Record<string, never>
-    >
-  ): Promise<boolean> => Promise.resolve(req.auth.role === "admin")
+    >,
+  ): Promise<boolean> => Promise.resolve(req.auth.role === "admin");
 
-  const authorizer = new Authorizer(handlerFn)
+  const authorizer = new Authorizer(handlerFn);
 
   it("authorizes when the handler returns true", async () => {
-    const req = new SanitizedRequest(
-      "get",
-      "/api/v1/users",
-      {},
-      {},
-      {},
-      {},
-      { role: "admin" },
-      {}
-    )
+    const req = new SanitizedRequest("get", "/api/v1/users", {}, {}, {}, {}, { role: "admin" }, {});
 
-    const res = await authorizer.isAuthorized(req)
-    expect(res).toEqual(true)
-  })
+    const res = await authorizer.isAuthorized(req);
+    expect(res).toEqual(true);
+  });
 
   it("does not authorize when the handler returns false", async () => {
-    const req = new SanitizedRequest(
-      "get",
-      "/api/v1/users",
-      {},
-      {},
-      {},
-      {},
-      { role: "guest" },
-      {}
-    )
+    const req = new SanitizedRequest("get", "/api/v1/users", {}, {}, {}, {}, { role: "guest" }, {});
 
-    const res = await authorizer.isAuthorized(req)
-    expect(res).toEqual(false)
-  })
-})
+    const res = await authorizer.isAuthorized(req);
+    expect(res).toEqual(false);
+  });
+});

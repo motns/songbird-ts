@@ -13,40 +13,25 @@ export class Authorizer<
   AuthenticationData,
   Body,
 > {
-  protected readonly handler: (req: SanitizedRequest<
-    PathParams,
-    QueryParams,
-    Headers,
-    Cookies,
-    AuthenticationData,
-    Body
-  >) => Promise<boolean>
+  protected readonly handler: (
+    req: SanitizedRequest<PathParams, QueryParams, Headers, Cookies, AuthenticationData, Body>,
+  ) => Promise<boolean>;
 
-  readonly scopes: string[] = []
+  readonly scopes: string[] = [];
 
   constructor(
-    handler: (req: SanitizedRequest<
-      PathParams,
-      QueryParams,
-      Headers,
-      Cookies,
-      AuthenticationData,
-      Body
-    >) => Promise<boolean>,
-    scopes: string[] = []
+    handler: (
+      req: SanitizedRequest<PathParams, QueryParams, Headers, Cookies, AuthenticationData, Body>,
+    ) => Promise<boolean>,
+    scopes: string[] = [],
   ) {
-    this.handler = handler
-    this.scopes = scopes
+    this.handler = handler;
+    this.scopes = scopes;
   }
 
-  isAuthorized(req: SanitizedRequest<
-    PathParams,
-    QueryParams,
-    Headers,
-    Cookies,
-    AuthenticationData,
-    Body
-  >): Promise<boolean> {
+  isAuthorized(
+    req: SanitizedRequest<PathParams, QueryParams, Headers, Cookies, AuthenticationData, Body>,
+  ): Promise<boolean> {
     return this.handler(req);
   }
 }

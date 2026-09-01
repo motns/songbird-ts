@@ -12,15 +12,15 @@ export class SanitizedRequest<
   AuthenticationData,
   Body,
 > {
-  readonly method: HttpMethod
-  readonly path: string
-  readonly pathParams: PathParams
-  readonly queryParams: QueryParams
-  readonly headers: Headers
-  readonly cookies: Cookies
-  readonly auth: AuthenticationData
-  readonly body: Body
-  readonly meta: Record<string, unknown> | undefined
+  readonly method: HttpMethod;
+  readonly path: string;
+  readonly pathParams: PathParams;
+  readonly queryParams: QueryParams;
+  readonly headers: Headers;
+  readonly cookies: Cookies;
+  readonly auth: AuthenticationData;
+  readonly body: Body;
+  readonly meta: Record<string, unknown> | undefined;
 
   constructor(
     method: HttpMethod,
@@ -33,14 +33,14 @@ export class SanitizedRequest<
     body: Body,
     meta?: Record<string, unknown>,
   ) {
-    this.method = method
-    this.path = path
-    this.pathParams = pathParams
-    this.queryParams = queryParams
-    this.headers = headers
-    this.cookies = cookies
-    this.auth = auth
-    this.body = body
-    this.meta = meta
+    this.method = method;
+    this.path = path;
+    this.pathParams = pathParams;
+    this.queryParams = queryParams;
+    this.headers = headers;
+    this.cookies = cookies;
+    this.auth = auth;
+    this.body = body;
+    this.meta = meta;
   }
 }

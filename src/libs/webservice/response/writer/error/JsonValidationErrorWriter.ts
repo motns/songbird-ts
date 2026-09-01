@@ -1,5 +1,8 @@
 import { JsonResponseWriter } from "../JsonResponseWriter.js";
-import { type RequestValidationErrors, requestValidationErrorsSchema } from "../../../../../types/sanitization.js";
+import {
+  type RequestValidationErrors,
+  requestValidationErrorsSchema,
+} from "../../../../../types/sanitization.js";
 
 export class JsonValidationErrorWriter extends JsonResponseWriter<RequestValidationErrors> {
   constructor() {
@@ -7,4 +10,4 @@ export class JsonValidationErrorWriter extends JsonResponseWriter<RequestValidat
   }
 }
 
-export const jsonValidationErrorWriter = new JsonValidationErrorWriter()
+export const jsonValidationErrorWriter = new JsonValidationErrorWriter();

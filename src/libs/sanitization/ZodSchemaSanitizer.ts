@@ -4,9 +4,12 @@ import { omit, isEmpty } from "remeda";
 import type { DataSanitizationResult } from "../../types/sanitization.js";
 import type { ComplexTypeValidationErrors, ValidationError } from "../../types/validation.js";
 
-
-export class ZodSchemaSanitizer<Output> extends DataSanitizerAsync<unknown, Output, z.core.$ZodIssueCode> {
-  private readonly schema: z.ZodType<Output, unknown>
+export class ZodSchemaSanitizer<Output> extends DataSanitizerAsync<
+  unknown,
+  Output,
+  z.core.$ZodIssueCode
+> {
+  private readonly schema: z.ZodType<Output, unknown>;
   // TODO - find a better way of getting these (v3 used to have a list, but v4 deprecated it)
   readonly codes = [
     "invalid_type",
@@ -20,26 +23,26 @@ export class ZodSchemaSanitizer<Output> extends DataSanitizerAsync<unknown, Outp
     "invalid_element",
     "invalid_value",
     "custom",
-  ] satisfies readonly z.core.$ZodIssueCode[]
+  ] satisfies readonly z.core.$ZodIssueCode[];
 
   constructor(s: z.ZodType<Output, unknown>) {
     super();
-    this.schema = s
+    this.schema = s;
   }
 
   override async process(v: unknown): Promise<DataSanitizationResult<Output>> {
-    const res = await this.schema.safeParseAsync(v)
+    const res = await this.schema.safeParseAsync(v);
 
     if (res.success) {
       return {
         isValid: true,
-        data: res.data
-      }
+        data: res.data,
+      };
     } else {
       return {
         isValid: false,
         validationErrors: this.zodErrorToFailedValidators(res.error),
-      }
+      };
     }
   }
 
@@ -61,7 +64,7 @@ export class ZodSchemaSanitizer<Output> extends DataSanitizerAsync<unknown, Outp
   private addIssueToNestedStructure(
     validationErrors: ComplexTypeValidationErrors,
     path: PropertyKey[],
-    errorObj: ValidationError
+    errorObj: ValidationError,
   ) {
     let current = validationErrors;
     for (const segment of path) {
@@ -86,21 +89,21 @@ export class ZodSchemaSanitizer<Output> extends DataSanitizerAsync<unknown, Outp
         code: issue.code,
         message: issue.message,
         params: issue.params,
-      }
+      };
     } else {
-      const issueParams = omit(issue, ["code", "message", "path"])
+      const issueParams = omit(issue, ["code", "message", "path"]);
 
       if (!isEmpty(issueParams)) {
         return {
           code: issue.code,
           message: issue.message,
           params: issueParams,
-        }
+        };
       } else {
         return {
           code: issue.code,
           message: issue.message,
-        }
+        };
       }
     }
   }

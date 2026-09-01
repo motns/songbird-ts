@@ -1,16 +1,18 @@
 import {
   complexTypeValidationErrorsSchema,
   type ComplexTypeValidationFailure,
-  type ValidationResult
+  type ValidationResult,
 } from "./validation.js";
 import * as z from "zod";
 
 export type DataSanitizationSuccess<Out> = ValidationResult & {
-  isValid: true,
-  data: Out,
-}
+  isValid: true;
+  data: Out;
+};
 
-export type DataSanitizationResult<Out> = DataSanitizationSuccess<Out> | ComplexTypeValidationFailure
+export type DataSanitizationResult<Out> =
+  | DataSanitizationSuccess<Out>
+  | ComplexTypeValidationFailure;
 
 /**
  * Used to represent a successful request Sanitization result
@@ -19,9 +21,9 @@ export type DataSanitizationResult<Out> = DataSanitizationSuccess<Out> | Complex
  * @property {T} request The Sanitized (filtered and validated) request object
  */
 export type RequestSanitizationSuccess<T> = ValidationResult & {
-  isValid: true,
-  request: T,
-}
+  isValid: true;
+  request: T;
+};
 
 /**
  * Used to represent validation errors which occurred during the validation of the Request object
@@ -40,8 +42,8 @@ export const requestValidationErrorsSchema = z.object({
   header: complexTypeValidationErrorsSchema.optional(),
   cookie: complexTypeValidationErrorsSchema.optional(),
   global: complexTypeValidationErrorsSchema.optional(),
-})
-export type RequestValidationErrors = z.infer<typeof requestValidationErrorsSchema>
+});
+export type RequestValidationErrors = z.infer<typeof requestValidationErrorsSchema>;
 
 /**
  * Used to represent a failed data Sanitization result
@@ -50,11 +52,13 @@ export type RequestValidationErrors = z.infer<typeof requestValidationErrorsSche
  * @property {RequestValidationErrors} validationErrors
  */
 export type RequestSanitizationFailure = ValidationResult & {
-  isValid: false,
-  validationErrors: RequestValidationErrors,
-}
+  isValid: false;
+  validationErrors: RequestValidationErrors;
+};
 
 /**
  * Union type for representing a Request Sanitization Result
  */
-export type RequestSanitizationResult<T> = RequestSanitizationSuccess<T> | RequestSanitizationFailure
+export type RequestSanitizationResult<T> =
+  | RequestSanitizationSuccess<T>
+  | RequestSanitizationFailure;

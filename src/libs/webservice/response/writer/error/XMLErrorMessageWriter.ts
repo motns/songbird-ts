@@ -3,8 +3,8 @@ import { XMLResponseWriter } from "../XMLResponseWriter.js";
 
 export class XMLErrorMessageWriter extends XMLResponseWriter<ErrorMessage> {
   constructor() {
-    super(errorMessageSchema, "Generic XML error response format")
+    super(errorMessageSchema, "Generic XML error response format");
   }
 }
 
-export const xmlErrorMessageWriter = new XMLErrorMessageWriter()
+export const xmlErrorMessageWriter = new XMLErrorMessageWriter();

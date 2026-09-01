@@ -7,21 +7,18 @@ export class PreAuthorizer<AuthenticatorOutput> {
   /**
    * @public Handler function which decides whether the request may proceed as (pre)authorized
    */
-  protected readonly handler: (auth: AuthenticatorOutput) => boolean
+  protected readonly handler: (auth: AuthenticatorOutput) => boolean;
 
   /**
    * @public List of scopes which are authorised - used for documentation purposes only.
    * Technically, this only applies to OAuth Security Schemes in OpenAPI, but we'll include
    * it for other schemes as well in the documentation if provided.
    */
-  readonly scopes: string[] = []
+  readonly scopes: string[] = [];
 
-  constructor(
-    handler: (auth: AuthenticatorOutput) => boolean,
-    scopes: string[] = []
-  ) {
-    this.handler = handler
-    this.scopes = scopes
+  constructor(handler: (auth: AuthenticatorOutput) => boolean, scopes: string[] = []) {
+    this.handler = handler;
+    this.scopes = scopes;
   }
 
   isAuthorized(auth: AuthenticatorOutput): boolean {
