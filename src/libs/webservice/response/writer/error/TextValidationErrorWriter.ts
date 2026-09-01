@@ -1,27 +1,25 @@
-import { RequestValidationErrors, requestValidationErrorsSchema } from "../../../../../types/sanitization";
-import { ResponseBodyWriter } from "../ResponseBodyWriter";
-import { MimeType } from "../../../../../enums/mime";
-import { ZodContentObject } from "@asteasolutions/zod-to-openapi/dist/openapi-registry";
-import { z } from "zod";
+import type { RequestValidationErrors } from "../../../../../types/sanitization.js";
+import { ResponseBodyWriter } from "../ResponseBodyWriter.js";
+import { type MimeType, mimeTypes } from "../../../../../enums/mime.js";
+import * as z from "zod";
 import YAML from "yaml"
 
 export class TextValidationErrorWriter extends ResponseBodyWriter<RequestValidationErrors, string> {
-  readonly mimeType: MimeType = MimeType.TXT
+  readonly mimeType: MimeType = mimeTypes.TXT
 
   constructor() {
-    super("Validation error response output in plain text, formatted by YAML")
-  }
-
-  serialise(input: RequestValidationErrors): string {
-    return YAML.stringify(input)
-  }
-
-  protected generateOpenApiDefinition(): ZodContentObject | undefined {
-    return {
-      [this.mimeType]: {
-        schema: z.string()
+    super(
+      "Validation error response output in plain text, formatted by YAML",
+      {
+        [mimeTypes.TXT]: {
+          schema: z.string()
+        }
       }
-    }
+    )
+  }
+
+  override serialise(input: RequestValidationErrors): string {
+    return YAML.stringify(input)
   }
 }
 

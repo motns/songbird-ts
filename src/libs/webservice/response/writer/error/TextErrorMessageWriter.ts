@@ -1,26 +1,24 @@
-import { ResponseBodyWriter } from "../ResponseBodyWriter";
-import { MimeType } from "../../../../../enums/mime";
-import { ZodContentObject } from "@asteasolutions/zod-to-openapi/dist/openapi-registry";
+import { ResponseBodyWriter } from "../ResponseBodyWriter.js";
+import { type MimeType, mimeTypes } from "../../../../../enums/mime.js";
 import { z } from "zod";
-import { errorSchema } from "./common";
+import { type ErrorMessage } from "./common.js";
 
-export class TextErrorMessageWriter extends ResponseBodyWriter<z.infer<typeof errorSchema>, string> {
-  readonly mimeType: MimeType = MimeType.TXT
+export class TextErrorMessageWriter extends ResponseBodyWriter<ErrorMessage, string> {
+  override readonly mimeType: MimeType = mimeTypes.TXT
 
   constructor() {
-    super("Generic plain text error response format")
-  }
-
-  serialise(input: z.infer<typeof errorSchema>): string {
-    return input.error
-  }
-
-  protected generateOpenApiDefinition(): ZodContentObject | undefined {
-    return {
-      [this.mimeType]: {
-        schema: z.string()
+    super(
+      "Generic plain text error response format",
+      {
+        [mimeTypes.TXT]: {
+          schema: z.string()
+        }
       }
-    }
+    )
+  }
+
+  override serialise(input: ErrorMessage): string {
+    return input.error
   }
 }
 

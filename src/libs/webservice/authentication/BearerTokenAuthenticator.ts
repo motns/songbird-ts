@@ -1,46 +1,47 @@
-import { AuthenticatorBase } from "./AuthenticatorBase";
-import { z, ZodObject, ZodString } from "zod";
-import { AuthenticationResult } from "../../../types/authentication";
-import { SecuritySchemeObject, SecuritySchemeType } from "openapi3-ts/src/model/openapi31";
-import { HttpRequestHeader } from "../../../enums/http";
+import { AuthenticatorBase } from "./AuthenticatorBase.js";
+import * as z from "zod";
+import type { AuthenticationResult } from "../../../types/authentication.js";
+import { httpRequestHeader } from "../../../enums/http.js";
+import type { SecuritySchemeObject } from "openapi3-ts/oas31";
 
-class BearerTokenAuthenticator<
+
+// oxlint-disable-next-line no-unused-vars
+export class BearerTokenAuthenticator<
   Output
 > extends AuthenticatorBase<
-  ZodObject<{}>,
-  ZodObject<{ [K in HttpRequestHeader.AUTHORIZATION]: ZodString }>,
-  ZodObject<{}>,
+  Record<string, never>,
+  Record<string, never>,
+  Record<typeof httpRequestHeader.AUTHORIZATION, string>,
+  Record<string, never>,
   Output
 > {
-  readonly queryParamsSchema = z.object({})
-  readonly cookiesSchema = z.object({})
-  readonly headersSchema: ZodObject<{ [K in HttpRequestHeader.AUTHORIZATION]: ZodString }>
-  readonly securitySchemeType: SecuritySchemeType = "http"
-
   constructor(
     name: string,
     description: string,
     handler: (
+      pathParams: {},
       queryParams: {},
-      headers: { [K in HttpRequestHeader.AUTHORIZATION]: string },
+      headers: { [httpRequestHeader.AUTHORIZATION]: string },
       cookies: {},
     ) => Promise<AuthenticationResult<Output>>
   ) {
     super(
       name,
       description,
+      z.object({}),
+      z.object({}),
+      z.object({
+        [httpRequestHeader.AUTHORIZATION]: z.string()
+      }),
+      z.object({}),
       handler,
       "Invalid or expired Bearer Token"
     )
-
-    this.headersSchema = z.object({
-      [HttpRequestHeader.AUTHORIZATION]: z.string()
-    })
   }
 
   protected generateOpenApiDefinition(): SecuritySchemeObject | undefined {
     return {
-      type: this.securitySchemeType,
+      type: "http",
       description: this.description,
       scheme: "bearer"
     };

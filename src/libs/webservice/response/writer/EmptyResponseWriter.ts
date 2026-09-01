@@ -1,20 +1,15 @@
-import { ResponseBodyWriter } from "./ResponseBodyWriter";
-import { ZodContentObject } from "@asteasolutions/zod-to-openapi/dist/openapi-registry";
-import { MimeType } from "../../../../enums/mime";
+import { ResponseBodyWriter } from "./ResponseBodyWriter.js";
+import { type MimeType, mimeTypes } from "../../../../enums/mime.js";
 
-export class EmptyResponseWriter extends ResponseBodyWriter<any, null> {
-  override readonly mimeType: MimeType = MimeType.TXT // Dummy value
+export class EmptyResponseWriter extends ResponseBodyWriter<unknown, null> {
+  override readonly mimeType: MimeType = mimeTypes.TXT // Dummy value
 
   constructor() {
-    super("");
+    super("", undefined)
   }
 
-  override serialise(data: any): null {
+  override serialise(_input?: any): null {
     return null;
-  }
-
-  override getOpenApiDefinition(): ZodContentObject | undefined {
-    return undefined;
   }
 }
 

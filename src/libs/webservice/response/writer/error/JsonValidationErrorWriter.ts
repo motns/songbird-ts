@@ -1,7 +1,7 @@
-import { JsonResponseWriter } from "../JsonResponseWriter";
-import { requestValidationErrorsSchema } from "../../../../../types/sanitization";
+import { JsonResponseWriter } from "../JsonResponseWriter.js";
+import { type RequestValidationErrors, requestValidationErrorsSchema } from "../../../../../types/sanitization.js";
 
-export class JsonValidationErrorWriter extends JsonResponseWriter<typeof requestValidationErrorsSchema> {
+export class JsonValidationErrorWriter extends JsonResponseWriter<RequestValidationErrors> {
   constructor() {
     super(requestValidationErrorsSchema, "");
   }

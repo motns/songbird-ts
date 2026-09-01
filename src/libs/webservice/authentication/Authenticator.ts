@@ -1,6 +1,6 @@
-import { AuthenticationResult } from "../../../types/authentication";
-import { SecuritySchemeObject } from "openapi3-ts/oas31";
-import { SongbirdRawRequest } from "../request/SongbirdRawRequest";
+import type { AuthenticationResult } from "../../../types/authentication.js";
+import type { SecuritySchemeObject } from "openapi3-ts/oas31";
+import { RawRequest } from "../request/RawRequest.js";
 
 export abstract class Authenticator<Output> {
   /**
@@ -22,7 +22,7 @@ export abstract class Authenticator<Output> {
   /**
    * OpenAPI definition for this Authenticator, to be added under SecuritySchemes
    */
-  readonly openApiDefinition?: SecuritySchemeObject
+  readonly openApiDefinition?: SecuritySchemeObject | undefined
 
   protected constructor(
     name: string,
@@ -35,7 +35,7 @@ export abstract class Authenticator<Output> {
     this.openApiDefinition = this.generateOpenApiDefinition();
   }
 
-  abstract authenticate(req: SongbirdRawRequest): Promise<AuthenticationResult<Output>>
+  abstract authenticate(req: RawRequest): Promise<AuthenticationResult<Output>>
 
   protected abstract generateOpenApiDefinition(): SecuritySchemeObject | undefined
 }

@@ -1,5 +1,9 @@
 import { z } from "zod";
 
-export const errorSchema = z.object({
+export type ErrorMessage = {
+  error: string
+}
+
+export const errorMessageSchema = z.object({
   error: z.string().min(1)
 })

@@ -1,29 +1,28 @@
-import { ResponseBodyWriter } from "./ResponseBodyWriter";
-import { z, ZodTypeAny } from "zod";
-import { MimeType } from "../../../../enums/mime";
-import { ZodContentObject } from "@asteasolutions/zod-to-openapi/dist/openapi-registry";
+import { ResponseBodyWriter } from "./ResponseBodyWriter.js";
+import { z } from "zod";
+import { type MimeType, mimeTypes } from "../../../../enums/mime.js";
 import { getOpenApiMetadata } from "@asteasolutions/zod-to-openapi";
 
-export class JsonResponseWriter<
-  Schema extends ZodTypeAny
-> extends ResponseBodyWriter<z.infer<Schema>, string> {
-  override readonly mimeType: MimeType = MimeType.JSON
-  readonly schema: Schema
+export class JsonResponseWriter<In> extends ResponseBodyWriter<In, string> {
+  override readonly mimeType: MimeType = mimeTypes.JSON
+  // The schema is only used for OpenAPI documentation, which is why it takes the
+  // writer's `In` type as its output type.
+  readonly schema: z.ZodType<In, unknown>
 
-  constructor(schema: Schema, description?: string) {
-    super(description || getOpenApiMetadata(schema)["description"] || "")
+  constructor(
+    schema: z.ZodType<In, unknown>,
+    description?: string
+  ) {
+    super(
+      description || getOpenApiMetadata(schema)["description"] || "",
+      {
+        [mimeTypes.JSON]: { schema }
+      }
+    )
     this.schema = schema
   }
 
-  override serialise(input: z.infer<Schema>): string {
+  override serialise(input: In): string {
     return JSON.stringify(input);
-  }
-
-  override getOpenApiDefinition(): ZodContentObject | undefined {
-    return {
-      [this.mimeType]: {
-        schema: this.schema
-      }
-    }
   }
 }

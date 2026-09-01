@@ -21,45 +21,64 @@ import { z } from "zod";
 export const validationErrorSchema = z.object({
   code: z.string(),
   message: z.string(),
-  params: z.record(z.unknown()).optional()
+  params: z.record(z.string(), z.unknown()).optional(),
 })
 export type ValidationError = z.infer<typeof validationErrorSchema>
 
 /**
  * Used to represent a collection of validation errors which apply to either a simple or a complex type, in a format which
- * is machine friendly.
- * The `attribute` level errors only apply if we're validating an Object and there are attribute-specific errors.
- * The `global` errors apply to simple type validation errors, or Object validation errors which involve multiple attributes.
- * Either `attribute` or `global` must be filled in.
+ * is machine-friendly.
+ * The naming and format mirror closely what's returned by Zod4's new `z.treeifyError()` method, with the main difference
+ * being that instead of returning just an error string for each failure, we return a complex object type - see `ValidationError`.
+ * Either `attribute`, `items` or `global` must be filled in.
  *
- * @property {Record<string, ValidationError[]>} attribute Record containing validation errors by attribute path in `jq` format
- * @property {ValidationError[]} global List of validation errors which aren't specific to a single attribute
- * @example <caption>Validation errors for object type</caption>
+ * @property {Record<string, ComplexTypeValidationErrors>} properties Only applies if we're returning errors for an Object.
+ *                                                                    Contains potentially nested validation errors for object properties.
+ * @property {Record<number, ComplexTypeValidationErrors>} items Only applies if we're returning errors for an Array.
+ *                                                               Record containing potentially nested validation errors for array items,
+ *                                                               keyed by element index.
+ * @property {ValidationError[]} errors List of validation errors which apply at the current level. Simple types would
+ *                                      only have `errors`, and no `properties` or `items` key.
+ *                                      This is also where validation errors which apply to multiple keys or array
+ *                                      elements would appear.
+ * @example <caption>Validation errors for nested object type</caption>
  * {
- *   attribute: {
- *     "username": [{
- *       code: "too_short",
- *       message: "has to be 5 characters of more",
- *       params: {
- *         length: 10
+ *   properties: {
+ *     username: {
+ *       errors: [{
+ *         code: "too_short",
+ *         message: "has to be 5 characters of more",
+ *         params: {
+ *           length: 5
+ *         }
+ *       }]
+ *     },
+ *     addresses: {
+ *       items: {
+ *         1: {
+ *           properties: {
+ *             postcode: {
+ *               errors: [{
+ *                 code: "invalid_format",
+ *                 message: "has to be valid postcode",
+ *                 params: {
+ *                   format: "postcode"
+ *                 }
+ *               }]
+ *             }
+ *           }
+ *         }
  *       }
- *     }],
- *     "addresses[1].postcode": [{
- *       code: "invalid_format",
- *       message: "has to be valid postcode",
- *       params: {
- *         format: "postcode"
- *       }
- *     }]
+ *     }
  *   },
- *   global: [{
+ *   errors: [{
  *     code: "missing_address",
  *     message: "both shipping and billing address must be provided"
  *   }]
  * }
  * @example <caption>Validation errors for simple type</caption>
  * {
- *   global: [{
+ *   errors: [{
  *     code: "too_small",
  *     message: "has to be 100 or more",
  *     params: {
@@ -69,9 +88,18 @@ export type ValidationError = z.infer<typeof validationErrorSchema>
  * }
  */
 export const complexTypeValidationErrorsSchema = z.object({
-  attribute: z.record(z.array(validationErrorSchema)).optional(),
-  global: z.array(validationErrorSchema).optional(),
+  get properties() {
+    return z.record(z.string(), complexTypeValidationErrorsSchema).optional()
+  },
+  get items() {
+    return z.record(z.number(), complexTypeValidationErrorsSchema).optional()
+  },
+  errors: z.array(validationErrorSchema).optional(),
 })
+  // This schema is self-referential (see `properties`/`items` above). Without a stable ref ID here,
+  // zod-to-openapi has no way to detect the cycle and recurses into it forever while generating the
+  // OpenAPI document, overflowing the call stack.
+  .meta({ id: "ComplexTypeValidationErrors" })
 export type ComplexTypeValidationErrors = z.infer<typeof complexTypeValidationErrorsSchema>
 
 /**
@@ -111,7 +139,7 @@ export type RequestValidatorFunction<
   PathParams,
   QueryParams,
   Headers,
-  RequestBody,
+  RequestBody
 > = (
   pathParams: PathParams,
   queryParams: QueryParams,

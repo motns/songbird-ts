@@ -1,9 +1,9 @@
 import {
   complexTypeValidationErrorsSchema,
-  ComplexTypeValidationFailure,
-  ValidationResult
-} from "./validation";
-import { z } from "zod";
+  type ComplexTypeValidationFailure,
+  type ValidationResult
+} from "./validation.js";
+import * as z from "zod";
 
 export type DataSanitizationSuccess<Out> = ValidationResult & {
   isValid: true,

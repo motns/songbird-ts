@@ -1,9 +1,9 @@
-import { JsonResponseWriter } from "../JsonResponseWriter";
-import { errorSchema } from "./common";
+import { JsonResponseWriter } from "../JsonResponseWriter.js";
+import { type ErrorMessage, errorMessageSchema } from "./common.js";
 
-export class JsonErrorMessageWriter extends JsonResponseWriter<typeof errorSchema> {
+export class JsonErrorMessageWriter extends JsonResponseWriter<ErrorMessage> {
   constructor() {
-    super(errorSchema, "Generic JSON error response format")
+    super(errorMessageSchema, "Generic JSON error response format")
   }
 }
 

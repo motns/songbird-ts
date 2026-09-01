@@ -1,10 +1,9 @@
-import { JsonResponseWriter } from "../JsonResponseWriter";
-import { errorSchema } from "./common";
-import { XMLResponseWriter } from "../XMLResponseWriter";
+import { type ErrorMessage, errorMessageSchema } from "./common.js";
+import { XMLResponseWriter } from "../XMLResponseWriter.js";
 
-export class XMLErrorMessageWriter extends XMLResponseWriter<typeof errorSchema> {
+export class XMLErrorMessageWriter extends XMLResponseWriter<ErrorMessage> {
   constructor() {
-    super(errorSchema, "Generic XML error response format")
+    super(errorMessageSchema, "Generic XML error response format")
   }
 }
 

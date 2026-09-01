@@ -1,43 +1,42 @@
-import _ from "lodash";
-import { z, ZodObject, ZodTypeAny } from "zod";
-import { PathParamZodSchema } from "../../../types/urlUtils";
-import { HttpMethod, HttpStatus } from "../../../enums/http";
-import { SongbirdSanitizedRequest } from "../request/SongbirdSanitizedRequest";
-import {
+import { unique } from "remeda";
+import type { RouteParamOutputType } from "../../../types/urlUtils.js";
+import { type HttpMethod, httpStatus, type HttpStatus } from "../../../enums/http.js";
+import { RawRequest, SanitizedRequest } from "../request/index.js";
+import type {
+  AuthenticationResult,
   ComplexTypeValidationErrors,
   ComplexValidationResult,
-  RequestValidatorFunction
-} from "../../../types/validation";
-import { RequestSanitizationResult } from "../../../types/sanitization";
-import { mergeComplexTypeValidationErrors } from "../../validation";
-import { RouteConfig } from "@asteasolutions/zod-to-openapi";
-import { AuthenticationResult } from "../../../types/authentication";
-import { Authenticator } from "../authentication/Authenticator";
-import { Authorizer } from "../authorization/Authorizer";
-import { PreAuthorizer } from "../authorization/PreAuthorizer";
-import { EndpointParamSchemaType } from "../../../types/webservice";
-import { RestEndpointDef } from "./RestEndpointDef";
-import { ZodSchemaSanitizer } from "../../sanitisation/ZodSchemaSanitizer";
-import { SongbirdRawRequest } from "../request/SongbirdRawRequest";
-import { SongbirdBadRequestResponse } from "../response/SongbirdBadRequestResponse";
-import { SongbirdResponses } from "../../../types/response";
-import { SongbirdUnauthenticatedResponse } from "../response/SongbirdUnauthenticatedResponse";
-import { SongbirdUnauthorisedResponse } from "../response/SongbirdUnauthorisedResponse";
-import { SongbirdInternalErrorResponse } from "../response/SongbirdInternalErrorResponse";
-import { SongbirdOkResponse } from "../response/SongbirdOkResponse";
+  CookieDefinitions,
+  EndpointParamType,
+  RequestSanitizationResult,
+  RequestValidationErrors,
+  RequestValidatorFunction,
+  ResponseHeadersType
+} from "../../../types/index.js";
+import { mergeComplexTypeValidationErrors } from "../../validation.js";
+import type { RouteConfig } from "@asteasolutions/zod-to-openapi";
+import { Authenticator } from "../authentication/index.js";
+import { Authorizer, PreAuthorizer } from "../authorization/index.js";
+import { RestEndpointConfig } from "./RestEndpointConfig.js";
+import { ZodSchemaSanitizer } from "../../sanitization/index.js";
+import type { OkResponse } from "../response/index.js";
+import { EndpointResponse } from "../response/index.js";
+import type { GenericErrorResponse } from "../../../types/error.js";
+import { isEmptySchema } from "../../schemaUtils.js";
 
 
 // TODO - Configuration object for behaviours (for example whether to 404 on invalid path parameters)
 export class RestEndpoint<
   RoutePattern extends string,
-  PathParamsSchema extends PathParamZodSchema<RoutePattern>,
-  QueryParamsSchema extends EndpointParamSchemaType,
-  RequestHeadersSchema extends EndpointParamSchemaType,
-  RequestCookiesSchema extends EndpointParamSchemaType,
-  RequestParserIn,
-  RequestParserOut,
-  ResponseHeadersSchema extends EndpointParamSchemaType,
-  ResponseCookiesSchema extends EndpointParamSchemaType,
+  PathParams extends RouteParamOutputType<RoutePattern>,
+  QueryParams extends EndpointParamType,
+  RequestHeaders extends EndpointParamType,
+  RequestCookies extends EndpointParamType,
+  RequestReaderOut,
+  SuccessResponseHeaders extends ResponseHeadersType,
+  SuccessResponseCookies extends CookieDefinitions,
+  ErrorResponseHeaders extends ResponseHeadersType,
+  ErrorResponseCookies extends CookieDefinitions,
   SuccessResponseWriterIn,
   SuccessResponseWriterOut,
   ErrorResponseWriterOut,
@@ -76,16 +75,17 @@ export class RestEndpoint<
   /**
    * @public Endpoint definition this endpoint, containing schema information on expected request/response parameters.
    */
-  readonly endpointDefinition: RestEndpointDef<
+  readonly config: RestEndpointConfig<
     RoutePattern,
-    PathParamsSchema,
-    QueryParamsSchema,
-    RequestHeadersSchema,
-    RequestCookiesSchema,
-    ResponseHeadersSchema,
-    ResponseCookiesSchema,
-    RequestParserIn,
-    RequestParserOut,
+    PathParams,
+    QueryParams,
+    RequestHeaders,
+    RequestCookies,
+    SuccessResponseHeaders,
+    SuccessResponseCookies,
+    ErrorResponseHeaders,
+    ErrorResponseCookies,
+    RequestReaderOut,
     SuccessResponseWriterIn,
     SuccessResponseWriterOut,
     ErrorResponseWriterOut
@@ -93,46 +93,60 @@ export class RestEndpoint<
 
   readonly authenticator: Authenticator<AuthOutput>
 
-  readonly preAuthorizer?: PreAuthorizer<AuthOutput>
+  readonly preAuthorizer: PreAuthorizer<AuthOutput> | undefined
 
-  readonly authorizer?: Authorizer<
-    z.infer<PathParamsSchema>,
-    z.infer<QueryParamsSchema>,
-    z.infer<RequestHeadersSchema>,
-    z.infer<RequestCookiesSchema>,
+  readonly authorizer: Authorizer<
+    PathParams,
+    QueryParams,
+    RequestHeaders,
+    RequestCookies,
     AuthOutput,
-    RequestParserOut
-  >
+    RequestReaderOut
+  > | undefined
 
   /**
    * @public Request handler function for this endpoint
    */
-  readonly handler: (req: SongbirdSanitizedRequest<
-    z.infer<PathParamsSchema>,
-    z.infer<QueryParamsSchema>,
-    z.infer<RequestHeadersSchema>,
-    z.infer<RequestCookiesSchema>,
+  readonly requestHandler: (req: SanitizedRequest<
+    PathParams,
+    QueryParams,
+    RequestHeaders,
+    RequestCookies,
     AuthOutput,
-    RequestParserOut
-  >) => Promise<{ body: SuccessResponseWriterIn, headers: z.infer<ResponseHeadersSchema> }>
-  //>) => Promise<SongbirdResponse<z.infer<ResponseHeadersSchema>, SuccessResponseWriterIn, SuccessResponseWriterOut>>
+    RequestReaderOut
+  >) => Promise<OkResponse<
+    SuccessResponseHeaders,
+    SuccessResponseCookies,
+    SuccessResponseWriterIn
+  >>
 
   /**
-   * @public The HTTP status code returned when request is successful - defaults to 200 OK
+   * @public The HTTP status code returned when the request is successful - defaults to 200 OK
    */
   readonly successHttpStatus: HttpStatus
 
   /**
    * @public Used to define additional validators not covered in the first round of Zod validation/sanitization
    */
-  readonly additionalRequestValidators?: RequestValidatorFunction<
-    z.infer<PathParamsSchema>,
-    z.infer<QueryParamsSchema>,
-    z.infer<RequestHeadersSchema>,
-    RequestParserOut
-  >[]
+  readonly additionalRequestValidators: RequestValidatorFunction<
+    PathParams,
+    QueryParams,
+    RequestHeaders,
+    RequestReaderOut
+  >[] | undefined
 
-  constructor(
+  constructor({
+    operationId,
+    docs,
+    method,
+    endpointConfig,
+    authenticator,
+    requestHandler,
+    preAuthorizer,
+    authorizer,
+    additionalRequestValidators,
+    successHttpStatus
+  }: {
     operationId: string,
     docs: {
       endpointSummary: string,
@@ -140,69 +154,85 @@ export class RestEndpoint<
       tags?: string[],
     },
     method: HttpMethod,
-    endpointDefinition: RestEndpointDef<
+    endpointConfig: RestEndpointConfig<
       RoutePattern,
-      PathParamsSchema,
-      QueryParamsSchema,
-      RequestHeadersSchema,
-      RequestCookiesSchema,
-      ResponseHeadersSchema,
-      ResponseCookiesSchema,
-      RequestParserIn,
-      RequestParserOut,
+      PathParams,
+      QueryParams,
+      RequestHeaders,
+      RequestCookies,
+      SuccessResponseHeaders,
+      SuccessResponseCookies,
+      ErrorResponseHeaders,
+      ErrorResponseCookies,
+      RequestReaderOut,
       SuccessResponseWriterIn,
       SuccessResponseWriterOut,
       ErrorResponseWriterOut
     >,
     authenticator: Authenticator<AuthOutput>,
-    handler: (req: SongbirdSanitizedRequest<
-      z.infer<PathParamsSchema>,
-      z.infer<QueryParamsSchema>,
-      z.infer<RequestHeadersSchema>,
-      z.infer<RequestCookiesSchema>,
+    requestHandler: (req: SanitizedRequest<
+      PathParams,
+      QueryParams,
+      RequestHeaders,
+      RequestCookies,
       AuthOutput,
-      RequestParserOut
-    >) => Promise<{ body: SuccessResponseWriterIn, headers: z.infer<ResponseHeadersSchema> }>,
-    //>) => Promise<SongbirdResponse<z.infer<ResponseHeadersSchema>, SuccessResponseWriterIn, SuccessResponseWriterOut>>,
+      RequestReaderOut
+    >) => Promise<OkResponse<
+      SuccessResponseHeaders,
+      SuccessResponseCookies,
+      SuccessResponseWriterIn
+    >>,
     preAuthorizer?: PreAuthorizer<AuthOutput>,
     authorizer?: Authorizer<
-      z.infer<PathParamsSchema>,
-      z.infer<QueryParamsSchema>,
-      z.infer<RequestHeadersSchema>,
-      z.infer<RequestCookiesSchema>,
+      PathParams,
+      QueryParams,
+      RequestHeaders,
+      RequestCookies,
       AuthOutput,
-      RequestParserOut
+      RequestReaderOut
     >,
     additionalRequestValidators?: RequestValidatorFunction<
-      z.infer<PathParamsSchema>,
-      z.infer<QueryParamsSchema>,
-      z.infer<RequestHeadersSchema>,
-      RequestParserOut
+      PathParams,
+      QueryParams,
+      RequestHeaders,
+      RequestReaderOut
     >[],
     successHttpStatus?: HttpStatus,
-  ) {
+  }) {
     this.operationId = operationId
     this.endpointSummary = docs.endpointSummary
     this.endpointDescription = docs.endpointDescription
     this.tags = docs.tags || []
     this.method = method
-    this.endpointDefinition = endpointDefinition
+    this.config = endpointConfig
     this.authenticator = authenticator
     this.preAuthorizer = preAuthorizer
     this.authorizer = authorizer
-    this.handler = handler
+    this.requestHandler = requestHandler
     this.additionalRequestValidators = additionalRequestValidators
-    this.successHttpStatus = successHttpStatus || HttpStatus.OK
-    this.openApiDefinition = this.generateOpenApiDefinition();
+    this.successHttpStatus = successHttpStatus || httpStatus.OK
+    this.openApiDefinition = this.generateOpenApiDefinition()
   }
 
   async processRequest(
-    rawRequest: SongbirdRawRequest
+    rawRequest: RawRequest
   ): Promise<
-    SongbirdResponses<
-      z.infer<ResponseHeadersSchema>,
+    EndpointResponse<
+      SuccessResponseHeaders,
+      SuccessResponseCookies,
       SuccessResponseWriterIn,
-      SuccessResponseWriterOut,
+      SuccessResponseWriterOut
+    > |
+    EndpointResponse<
+      ErrorResponseHeaders,
+      ErrorResponseCookies,
+      RequestValidationErrors,
+      ErrorResponseWriterOut
+    > |
+    EndpointResponse<
+      ErrorResponseHeaders,
+      ErrorResponseCookies,
+      GenericErrorResponse,
       ErrorResponseWriterOut
     >
   > {
@@ -212,66 +242,59 @@ export class RestEndpoint<
       // Authenticators perform their own parameter validation, hence they can also
       // emit their own request validation errors
       if (!authenticationResult.isValid) {
-        return new SongbirdBadRequestResponse(
-          this.endpointDefinition.validationErrorWriter,
-          {}, // TODO
-          authenticationResult.validationErrors
+        return new EndpointResponse(
+          this.config.errorHandler.handleBadRequest(authenticationResult.validationErrors),
+          this.config.validationErrorWriter,
         )
       }
 
       if (!authenticationResult.isAuthenticated) {
-        return new SongbirdUnauthenticatedResponse(
-          this.endpointDefinition.errorMessageWriter,
-          {}, // TODO
-          this.authenticator.errorMessage
+        return new EndpointResponse(
+          this.config.errorHandler.handleUnauthenticated(),
+          this.config.errorMessageWriter,
         )
       }
 
-      const isPreAuthorized = this.preAuthorizeRequest(authenticationResult.output)
-      if (!isPreAuthorized) {
-        return new SongbirdUnauthorisedResponse(
-          this.endpointDefinition.errorMessageWriter,
-          {}, // TODO
+      if (!this.preAuthorizeRequest(authenticationResult.output)) {
+        return new EndpointResponse(
+          this.config.errorHandler.handleUnauthorised(),
+          this.config.errorMessageWriter,
         )
       }
 
-      const validationResult = await this.sanitizeRequest(rawRequest, authenticationResult.output)
+      const requestSanitizationResult = await this.sanitizeRequest(rawRequest, authenticationResult.output)
 
-      if (!validationResult.isValid) {
-        if (validationResult.validationErrors.pathParam) {
+      if (!requestSanitizationResult.isValid) {
+        if (requestSanitizationResult.validationErrors.pathParam) {
           // TODO - Optional 404 response?
         }
 
-        return new SongbirdBadRequestResponse(
-          this.endpointDefinition.validationErrorWriter,
-          {}, // TODO
-          validationResult.validationErrors
+        return new EndpointResponse(
+          this.config.errorHandler.handleBadRequest(requestSanitizationResult.validationErrors),
+          this.config.validationErrorWriter,
         )
       }
 
-      const isAuthorized = await this.authorizeRequest(validationResult.request);
-      if (!isAuthorized) {
-        return new SongbirdUnauthorisedResponse(
-          this.endpointDefinition.errorMessageWriter,
-          {}, // TODO
+      if (!await this.authorizeRequest(requestSanitizationResult.request)) {
+        return new EndpointResponse(
+          this.config.errorHandler.handleUnauthorised(),
+          this.config.errorMessageWriter,
         )
       }
 
-      const res = await this.handler(validationResult.request)
-      return new SongbirdOkResponse(
-        res.body,
-        this.endpointDefinition.successResponseWriter,
-        res.headers
+      return new EndpointResponse(
+        await this.requestHandler(requestSanitizationResult.request),
+        this.config.successResponseWriter,
       )
     } catch (e) {
-      return new SongbirdInternalErrorResponse(
-        this.endpointDefinition.errorMessageWriter,
-        {}, // TODO
+      return new EndpointResponse(
+        this.config.errorHandler.handleInternalError(e),
+        this.config.errorMessageWriter,
       )
     }
   }
 
-  private async authenticateRequest(req: SongbirdRawRequest): Promise<AuthenticationResult<AuthOutput>> {
+  private async authenticateRequest(req: RawRequest): Promise<AuthenticationResult<AuthOutput>> {
     return await this.authenticator.authenticate(req)
   }
 
@@ -285,13 +308,13 @@ export class RestEndpoint<
   /**
    * @private Used to perform request authorisation *after* full request validation
    */
-  private async authorizeRequest(request: SongbirdSanitizedRequest<
-    z.infer<PathParamsSchema>,
-    z.infer<QueryParamsSchema>,
-    z.infer<RequestHeadersSchema>,
-    z.infer<RequestCookiesSchema>,
+  private async authorizeRequest(request: SanitizedRequest<
+    PathParams,
+    QueryParams,
+    RequestHeaders,
+    RequestCookies,
     AuthOutput,
-    RequestParserOut
+    RequestReaderOut
   >): Promise<boolean> {
     if (!this.authorizer) {
       return true;
@@ -301,15 +324,15 @@ export class RestEndpoint<
   }
 
   private async sanitizeRequest(
-    rawRequest: SongbirdRawRequest,
+    rawRequest: RawRequest,
     authenticationOutput: AuthOutput
-  ): Promise<RequestSanitizationResult<SongbirdSanitizedRequest<
-    z.infer<PathParamsSchema>,
-    z.infer<QueryParamsSchema>,
-    z.infer<RequestHeadersSchema>,
-    z.infer<RequestCookiesSchema>,
+  ): Promise<RequestSanitizationResult<SanitizedRequest<
+    PathParams,
+    QueryParams,
+    RequestHeaders,
+    RequestCookies,
     AuthOutput,
-    RequestParserOut
+    RequestReaderOut
   >>> {
     // There's currently no way to distinguish between sync and async Zod schemas, in fact Zod always processes
     // validation as async internally anyway, so trying to optimise this is redundant...
@@ -320,11 +343,11 @@ export class RestEndpoint<
       cookiesSR,
       requestBodySR,
     ] = await Promise.all([
-      (new ZodSchemaSanitizer(this.endpointDefinition.schemas.pathParams)).process(rawRequest.pathParams),
-      (new ZodSchemaSanitizer(this.endpointDefinition.schemas.queryParams)).process(rawRequest.queryParams),
-      (new ZodSchemaSanitizer(this.endpointDefinition.schemas.requestHeaders)).process(rawRequest.headers),
-      (new ZodSchemaSanitizer(this.endpointDefinition.schemas.requestCookies)).process(rawRequest.cookies),
-      this.endpointDefinition.requestBodyReader.parse(rawRequest.body)
+      (new ZodSchemaSanitizer(this.config.schemas.pathParams)).process(rawRequest.pathParams),
+      (new ZodSchemaSanitizer(this.config.schemas.queryParams)).process(rawRequest.queryParams),
+      (new ZodSchemaSanitizer(this.config.schemas.requestHeaders)).process(rawRequest.headers),
+      (new ZodSchemaSanitizer(this.config.schemas.requestCookies)).process(rawRequest.cookies),
+      this.config.requestBodyReader.parse(rawRequest.body)
     ])
 
     const isSanitizationValid =
@@ -350,7 +373,7 @@ export class RestEndpoint<
     if (!this.additionalRequestValidators) {
       return {
         isValid: true,
-        request: new SongbirdSanitizedRequest(
+        request: new SanitizedRequest(
           this.method,
           rawRequest.path,
           pathParamsSR.data,
@@ -386,7 +409,7 @@ export class RestEndpoint<
     if (isValidationSuccessful) {
       return {
         isValid: true,
-        request: new SongbirdSanitizedRequest(
+        request: new SanitizedRequest(
           this.method,
           rawRequest.path,
           pathParamsSR.data,
@@ -410,52 +433,61 @@ export class RestEndpoint<
   private generateOpenApiDefinition(): RouteConfig {
     const preAuthorizerScopes = this.preAuthorizer ? this.preAuthorizer.scopes : []
     const authorizerScopes = this.authorizer ? this.authorizer.scopes : []
-    const scopes = _.uniq(preAuthorizerScopes.concat(authorizerScopes))
+    const scopes = unique(preAuthorizerScopes.concat(authorizerScopes))
 
-    let routeConfig = {
+    const routeConfig = {
       method: this.method,
       operationId: this.operationId,
       summary: this.endpointSummary,
       description: this.endpointDescription,
       tags: this.tags,
-      path: this.endpointDefinition.openApiPath,
+      path: this.config.openApiPath,
       security: (this.authenticator.openApiDefinition) ? [{ [this.authenticator.name]: scopes }] : [],
       request: {
-        body: this.endpointDefinition.requestBodyReader.getOpenApiDefinition(),
-        params: this.endpointDefinition.schemas.pathParams instanceof ZodObject ? this.endpointDefinition.schemas.pathParams : undefined,
-        query: this.endpointDefinition.schemas.queryParams !== z.object({}) ? this.endpointDefinition.schemas.queryParams : undefined,
-        cookie: this.endpointDefinition.schemas.requestCookies !== z.object({}) ? this.endpointDefinition.schemas.requestCookies : undefined,
-        headers: this.endpointDefinition.schemas.requestHeaders !== z.object({}) ? this.endpointDefinition.schemas.requestHeaders : undefined,
+        params: !isEmptySchema(this.config.schemas.pathParams) ? this.config.schemas.pathParams : undefined,
+        query: !isEmptySchema(this.config.schemas.queryParams) ? this.config.schemas.queryParams : undefined,
+        cookies: !isEmptySchema(this.config.schemas.requestCookies) ? this.config.schemas.requestCookies : undefined,
+        headers: !isEmptySchema(this.config.schemas.requestHeaders) ? this.config.schemas.requestHeaders : undefined,
+        ...this.config.requestBodyReader.openApiDefinition &&
+        { body: this.config.requestBodyReader.openApiDefinition },
       },
       responses: {
-        [this.successHttpStatus]: {
-          description: this.endpointDefinition.successResponseWriter.description,
-          headers: this.endpointDefinition.schemas.responseHeaders !== z.object({}) ? this.endpointDefinition.schemas.responseHeaders: undefined,
-          content: this.endpointDefinition.successResponseWriter.getOpenApiDefinition(),
-          // TODO - Response cookies? This isn't officially supported by OpenAPI, so the best we can do is document `Set-Cookie` headers here...
+        // TODO - Response cookies? This isn't officially supported by OpenAPI, so the best we can do is document `Set-Cookie` headers here...
+        [this.successHttpStatus.toString()]: {
+          description: this.config.successResponseWriter.description,
+          ...(!isEmptySchema(this.config.schemas.successResponseHeaders)) &&
+            { headers: this.config.schemas.successResponseHeaders },
+          ...this.config.successResponseWriter.openApiDefinition &&
+            { content: this.config.successResponseWriter.openApiDefinition },
         },
-        [HttpStatus.BAD_REQUEST]: {
+        [httpStatus.BAD_REQUEST.toString()]: {
           description: "Returned when the request payload fails to pass validation checks, describing validation errors that occurred",
-          content: this.endpointDefinition.validationErrorWriter.getOpenApiDefinition(),
+          ...this.config.validationErrorWriter.openApiDefinition &&
+            { content: this.config.validationErrorWriter.openApiDefinition },
         },
-        [HttpStatus.INTERNAL_SERVER_ERROR]: {
+        [httpStatus.INTERNAL_SERVER_ERROR.toString()]: {
           description: "Returned when the request could not be processed due to an internal error",
-          content: this.endpointDefinition.errorMessageWriter.getOpenApiDefinition(),
+          ...this.config.errorMessageWriter.openApiDefinition &&
+            { content: this.config.errorMessageWriter.openApiDefinition },
         },
       },
     }
 
+    // TODO - Error headers and cookies
+
     if (this.authenticator.openApiDefinition) {
-      routeConfig.responses[HttpStatus.UNAUTHORIZED] = {
+      routeConfig.responses[httpStatus.UNAUTHORIZED] = {
         description: "Returned when the authentication credentials have expired or are invalid",
-        content: this.endpointDefinition.errorMessageWriter.getOpenApiDefinition(),
+        ...this.config.errorMessageWriter.openApiDefinition &&
+          { content: this.config.errorMessageWriter.openApiDefinition },
       }
     }
 
     if (this.preAuthorizer || this.authorizer) {
-      routeConfig.responses[HttpStatus.FORBIDDEN] = {
+      routeConfig.responses[httpStatus.FORBIDDEN] = {
         description: "Returned when the client has successfully authenticated but does not have permission to access this resource",
-        content: this.endpointDefinition.errorMessageWriter.getOpenApiDefinition(),
+        ...this.config.errorMessageWriter.openApiDefinition &&
+          { content: this.config.errorMessageWriter.openApiDefinition },
       }
     }
 

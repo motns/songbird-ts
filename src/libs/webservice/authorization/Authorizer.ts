@@ -1,19 +1,19 @@
-import { SongbirdSanitizedRequest } from "../request/SongbirdSanitizedRequest";
-import { EndpointParamType } from "../../../types/webservice";
+import { SanitizedRequest } from "../request/SanitizedRequest.js";
+import type { EndpointParamType, PathParamType } from "../../../types/webservice.js";
 
 /**
- * Wraps a handler which performs authorization *after* a request has been validated. If the authorization depends
+ * Wraps a handler which performs authorisation *after* a request has been validated. If the authorization depends
  * only on information provided by an Authenticator, a `PreAuthorizer` should be preferred for performance and security.
  */
 export class Authorizer<
-  PathParams extends EndpointParamType,
+  PathParams extends PathParamType,
   QueryParams extends EndpointParamType,
   Headers extends EndpointParamType,
   Cookies extends EndpointParamType,
   AuthenticationData,
   Body,
 > {
-  protected readonly handler: (req: SongbirdSanitizedRequest<
+  protected readonly handler: (req: SanitizedRequest<
     PathParams,
     QueryParams,
     Headers,
@@ -25,7 +25,7 @@ export class Authorizer<
   readonly scopes: string[] = []
 
   constructor(
-    handler: (req: SongbirdSanitizedRequest<
+    handler: (req: SanitizedRequest<
       PathParams,
       QueryParams,
       Headers,
@@ -39,7 +39,7 @@ export class Authorizer<
     this.scopes = scopes
   }
 
-  isAuthorized(req: SongbirdSanitizedRequest<
+  isAuthorized(req: SanitizedRequest<
     PathParams,
     QueryParams,
     Headers,

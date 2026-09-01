@@ -1,21 +1,19 @@
-import { AuthenticatorBase } from "./AuthenticatorBase";
-import { z, ZodObject, ZodString } from "zod";
-import { AuthenticationResult } from "../../../types/authentication";
-import { SecuritySchemeObject, SecuritySchemeType } from "openapi3-ts/src/model/openapi31";
+import { AuthenticatorBase } from "./AuthenticatorBase.js"
+import * as z from "zod"
+import type { AuthenticationResult } from "../../../types/authentication.js";
+import type { SecuritySchemeObject } from "openapi3-ts/oas31";
 
-abstract class ApiKeyHeaderAuthenticator<
+// oxlint-disable-next-line no-unused-vars
+export class ApiKeyHeaderAuthenticator<
   Output,
   AuthHeader extends string
 > extends AuthenticatorBase<
-  ZodObject<{}>,
-  ZodObject<{ [K in AuthHeader]: ZodString }>,
-  ZodObject<{}>,
+  Record<string, never>,
+  Record<string, never>,
+  Record<AuthHeader, string>,
+  Record<string, never>,
   Output
 > {
-  readonly queryParamsSchema = z.object({})
-  readonly cookiesSchema = z.object({})
-  readonly headersSchema: ZodObject<{ [K in AuthHeader]: ZodString }>
-  readonly securitySchemeType: SecuritySchemeType = "apiKey"
   private readonly authHeader: string
 
   constructor(
@@ -23,27 +21,31 @@ abstract class ApiKeyHeaderAuthenticator<
     description: string,
     authHeader: AuthHeader,
     handler: (
-      queryParams: {},
-      headers: { [K in AuthHeader]: string },
-      cookies: {},
+      pathParams: Record<string, never>,
+      queryParams: Record<string, never>,
+      headers: Record<AuthHeader, string>,
+      cookies: Record<string, never>,
     ) => Promise<AuthenticationResult<Output>>
   ) {
     super(
       name,
       description,
+      z.object({}),
+      z.object({}),
+      z.object({
+        [authHeader]: z.string()
+      }),
+      z.object({}),
       handler,
       "Invalid or expired API Key"
     )
 
     this.authHeader = authHeader
-    this.headersSchema = z.object({
-      [authHeader]: z.string()
-    }) as ZodObject<{ [K in AuthHeader]: ZodString }>
   }
 
   protected generateOpenApiDefinition(): SecuritySchemeObject | undefined {
     return {
-      type: this.securitySchemeType,
+      type: "apiKey",
       description: this.description,
       name: this.authHeader,
       in: "header"

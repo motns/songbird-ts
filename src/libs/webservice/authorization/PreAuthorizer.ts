@@ -1,7 +1,7 @@
 /**
- * Wraps a handler to perform authorization after request authentication, but *before* request validation,
+ * Wraps a handler to perform authorisation after request authentication, but *before* request validation;
  * hence it won't have any of the request data available yet.
- * A second phase of authorization may take place later, after request validation, via an `Authorizer`.
+ * A second phase of authorisation may take place later, after request validation, via an `Authorizer`.
  */
 export class PreAuthorizer<AuthenticatorOutput> {
   /**
@@ -10,8 +10,8 @@ export class PreAuthorizer<AuthenticatorOutput> {
   protected readonly handler: (auth: AuthenticatorOutput) => boolean
 
   /**
-   * @public List of scopes which are authorized - used for documentation purposes only.
-   * Technically this only applies to OAuth Security Schemes in OpenAPI, but we'll include
+   * @public List of scopes which are authorised - used for documentation purposes only.
+   * Technically, this only applies to OAuth Security Schemes in OpenAPI, but we'll include
    * it for other schemes as well in the documentation if provided.
    */
   readonly scopes: string[] = []

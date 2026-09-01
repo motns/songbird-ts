@@ -1,21 +1,16 @@
-import { RequestBodyReader } from "./RequestBodyReader";
-import { DataSanitizationResult } from "../../../../types/sanitization";
-import { ZodRequestBody } from "@asteasolutions/zod-to-openapi/dist/openapi-registry";
-import { MimeType } from "../../../../enums/mime";
+import { RequestBodyReader } from "./RequestBodyReader.js";
+import type { DataSanitizationResult } from "../../../../types/sanitization.js";
+import { type MimeType, mimeTypes } from "../../../../enums/mime.js";
 
-export class EmptyBodyReader extends RequestBodyReader<any, null> {
-  readonly mimeType: MimeType = MimeType.TXT // Dummy value - won't really get used
+export class EmptyBodyReader extends RequestBodyReader<null> {
+  readonly mimeType: MimeType = mimeTypes.TXT // Dummy value - won't really get used
 
   constructor() {
-    super("");
+    super("", undefined)
   }
 
-  parse(): Promise<DataSanitizationResult<null>> {
+  parse(_input?: any): Promise<DataSanitizationResult<null>> {
     return Promise.resolve({ isValid: true, data: null });
-  }
-
-  override getOpenApiDefinition(): ZodRequestBody | undefined {
-    return undefined
   }
 }
 

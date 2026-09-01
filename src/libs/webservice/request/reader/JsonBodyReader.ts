@@ -1,58 +1,60 @@
-import { RequestBodyReader } from "./RequestBodyReader";
-import { z, ZodTypeAny } from "zod";
-import { ZodRequestBody } from "@asteasolutions/zod-to-openapi/dist/openapi-registry";
-import { MimeType } from "../../../../enums/mime";
-import { DataSanitizationResult } from "../../../../types/sanitization";
-import { NonNullSanitiser } from "../../../sanitisation/NonNullSanitiser";
-import { JSONStringSanitiser } from "../../../sanitisation/JSONStringSanitiser";
-import { ZodSchemaSanitizer } from "../../../sanitisation/ZodSchemaSanitizer";
+import { RequestBodyReader } from "./RequestBodyReader.js";
+import { z } from "zod";
+import { type MimeType, mimeTypes } from "../../../../enums/mime.js";
+import type { DataSanitizationResult } from "../../../../types/sanitization.js";
+import { NonNullSanitizer } from "../../../sanitization/NonNullSanitizer.js";
+import { jsonStringSanitizer } from "../../../sanitization/JSONStringSanitizer.js";
+import { ZodSchemaSanitizer } from "../../.././sanitization/ZodSchemaSanitizer.js";
 import { getOpenApiMetadata } from "@asteasolutions/zod-to-openapi";
 
-export class JsonBodyReader<
-  Schema extends ZodTypeAny
-> extends RequestBodyReader<string, z.infer<Schema>> {
-  override readonly mimeType: MimeType = MimeType.JSON
-  readonly schema: Schema
 
-  constructor(schema: Schema, description?: string) {
-    super(description || getOpenApiMetadata(schema)["description"] || "");
+export class JsonBodyReader<Out> extends RequestBodyReader<Out> {
+  override readonly mimeType: MimeType = mimeTypes.JSON
+  readonly schema: z.ZodType<Out, unknown>
+  private readonly nonNullSanitiser: NonNullSanitizer<Blob> = new NonNullSanitizer<Blob>()
+  private readonly zodSanitiser: ZodSchemaSanitizer<Out>
+
+  constructor(
+    schema: z.ZodType<Out, unknown>,
+    description?: string | undefined
+  ) {
+    const desc = description || getOpenApiMetadata(schema)["description"] || ""
+    super(
+      desc,
+      {
+        description: desc,
+        content: {
+          [mimeTypes.JSON]: {
+            schema: schema
+          }
+        },
+        required: true,
+      }
+    )
     this.schema = schema
+    this.zodSanitiser = new ZodSchemaSanitizer(schema)
   }
 
-  override async parse(input?: string): Promise<
-    DataSanitizationResult<z.infer<Schema>>
-  > {
+  override async parse(input?: Blob): Promise<DataSanitizationResult<Out>> {
     return this.sanitise(input)
   }
 
-  private async sanitise(input?: string): Promise<DataSanitizationResult<z.infer<Schema>>> {
-    const strSR: DataSanitizationResult<string> = (new NonNullSanitiser<string>()).process(input)
-    if (!strSR.isValid) {
-      return strSR
+  private async sanitise(input?: Blob): Promise<DataSanitizationResult<Out>> {
+    const nnSR: DataSanitizationResult<Blob> = this.nonNullSanitiser.process(input)
+    if (!nnSR.isValid) {
+      return nnSR
     }
 
-    const jsonSR: DataSanitizationResult<unknown> = (new JSONStringSanitiser()).process(strSR.data)
+    const jsonSR: DataSanitizationResult<unknown> = jsonStringSanitizer.process(await nnSR.data.text())
     if (!jsonSR.isValid) {
       return jsonSR
     }
 
-    const schemaSR: DataSanitizationResult<z.infer<Schema>> = await (new ZodSchemaSanitizer(this.schema)).process(jsonSR.data)
+    const schemaSR: DataSanitizationResult<Out> = await this.zodSanitiser.process(jsonSR.data)
     if (!schemaSR.isValid) {
       return schemaSR
     }
 
-    return schemaSR.data
-  }
-
-  override getOpenApiDefinition(): ZodRequestBody | undefined {
-    return {
-      description: this.description,
-      content: {
-        [this.mimeType]: {
-          schema: this.schema
-        }
-      },
-      required: true,
-    }
+    return schemaSR
   }
 }

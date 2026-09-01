@@ -1,5 +1,5 @@
-import { RequestValidationErrors } from "./sanitization";
-import { Authenticator } from "../libs/webservice/authentication/Authenticator";
+import type { RequestValidationErrors } from "./sanitization.js";
+import { Authenticator } from "../libs/webservice/authentication/Authenticator.js";
 
 export type AuthenticationSuccess<Output> = {
   readonly isValid: true,
@@ -22,7 +22,7 @@ export type AuthenticationValidationFailure = {
 export type AuthenticationAccessFailure = {
   readonly isValid: true,
   readonly isAuthenticated: false,
-  readonly message?: string,
+  readonly message: string,
 }
 
 export type AuthenticationResult<Output> = AuthenticationSuccess<Output> | AuthenticationAccessFailure | AuthenticationValidationFailure

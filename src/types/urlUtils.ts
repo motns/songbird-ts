@@ -1,25 +1,26 @@
-import { MergeArrayOfObjects, ParsePrimitiveTypeString, StripStringPrefix, StripStringSuffix } from "./global";
-import { z, ZodNull, ZodObject, ZodType } from "zod";
+import type { MergeArrayOfObjects, ParsePrimitiveTypeString, StripStringPrefix, StripStringSuffix } from "./global.js";
+
 
 /**
  * Takes an endpoint path and extracts any path parameters as a Tuple.
  * It recognises Express-style path parameters: `/users/:user_id`.
+ * It also supports adding a type in angle brackets: `/users/:user_id<number>`.
  */
 export type ExtractRouteParamsAsList<Route> =
   Route extends string
-    ? Route extends `${infer Before}/:${infer Token}/${infer Rest}` // TODO - Why did I put "Before" here?
+    ? Route extends `${infer _Before}/:${infer Token}/${infer Rest}`
       ? [Token, ...ExtractRouteParamsAsList<Rest>]
-      : Route extends `${infer Before}/:${infer Token}`
+      : Route extends `${infer _Before}/:${infer Token}`
         ? [Token]
         : []
     : never
 
 /**
- * Helper type used to parse a path parameter string extracted from a URL, and turn it into an object
- * with the param name and primitive type for the parameter. Types can be provided in the
- * `:token<string>` format; if a type is not provided, it defaults to `string`.
+ * Helper type used to parse a path parameter string extracted from a URL via `ExtractRouteParamsAsList`
+ * and turn it into an object with the param name and primitive type for the parameter.
+ * Types can be provided in the `:token<type>` format; if a type is not provided, it defaults to `string`.
  */
-export type RouteParamToPrimitiveTypeKeyValue<Param> =
+export type RouteParamToPrimitiveTypeObject<Param> =
   Param extends string
     ? Param extends ""
       ? never
@@ -29,47 +30,45 @@ export type RouteParamToPrimitiveTypeKeyValue<Param> =
     : never
 
 /**
- * Helper type used to turn a path parameter extracted from a URL into a `{ name: ZodType<type> }` object
+ * Helper type used to turn a path parameter token extracted from a URL into
+ * a `{ name: type }` object.
  */
-export type RouteParamToZodTypeObject<Param extends string> = RouteParamToPrimitiveTypeKeyValue<Param> extends {
-  key: infer K extends string,
-  value: infer V
-} ? {
-  [Key in K]: ZodType<V>
-} : never
+export type RouteParamToTypeObject<Param extends string> =
+  [RouteParamToPrimitiveTypeObject<Param>] extends [never]
+    ? never
+    : RouteParamToPrimitiveTypeObject<Param> extends {
+        key: infer K extends string,
+        value: infer V
+      } ? {
+        [Key in K]: V
+      } : never
 
 /**
- * Helper type used to turn a list of path parameters extracted from a URL into a list of `{ name: ZodType<type> }`
- * objects for further processing
+ * Helper type used to turn a list of path parameter tokens extracted from a URL
+ * into a list of `{ name: type }` objects for further processing.
  */
-export type RouteParamListToZodTypeObjectList<T extends string[]> = {
-  [K in keyof T]: RouteParamToZodTypeObject<T[K]>
+export type RouteParamListToTypeObjectList<T extends string[]> = {
+  [K in keyof T]: RouteParamToTypeObject<T[K]>
 }
 
 /**
- * Used to generate the ZodSchema for path parameters in a given URL path
+ * Used to generate the output shape for path parameters in a given URL path
  */
-export type RouteParamOutputSchema<Route extends string> =
+export type RouteParamOutput<Route extends string> =
   MergeArrayOfObjects<
-    RouteParamListToZodTypeObjectList<
+    RouteParamListToTypeObjectList<
       ExtractRouteParamsAsList<Route>
     >
   >
 
 /**
- * Used to calculate Zod schema to validate path parameters for a given URL path.
- * Returns an empty object schema if the path contains no parameters.
- */
-export type PathParamZodSchema<Route extends string> =
-  ExtractRouteParamsAsList<Route> extends []
-    ? ZodObject<{}>
-    : ZodObject<RouteParamOutputSchema<Route>>
-
-/**
  * Used to calculate the output shape for validated path parameters for a given URL path.
- * Returns empty object if the path contains no parameters.
+ * Returns an empty object if the path contains no parameters.
  */
-export type RouteParamOutputType<Route extends string> = z.infer<PathParamZodSchema<Route>>
+export type RouteParamOutputType<Route extends string> =
+  ExtractRouteParamsAsList<Route> extends []
+    ? Record<string, never>
+    : RouteParamOutput<Route>
 
 /**
  * Used to join two Path segments, gracefully handling preceding/trailing slashes

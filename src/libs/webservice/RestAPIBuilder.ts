@@ -1,16 +1,17 @@
-import { AnyRestEndpoint } from "../../types/webservice";
-import { JsonResponseWriter } from "./response/writer/JsonResponseWriter";
-import { XMLResponseWriter } from "./response/writer/XMLResponseWriter";
-import { getOpenApiRef } from "../openapi";
-import { ZodTypeAny } from "zod";
-import { JsonBodyReader } from "./request/reader/JsonBodyReader";
-import _ from "lodash";
-import { OpenApiGeneratorV31, OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
+import type { AnyRestEndpoint } from "../../types/webservice.js";
+import { JsonResponseWriter } from "./response/writer/JsonResponseWriter.js";
+import { XMLResponseWriter } from "./response/writer/XMLResponseWriter.js";
+import { z } from "zod";
+import { JsonBodyReader } from "./request/reader/JsonBodyReader.js";
+import { mergeDeep, values } from "remeda";
+import { getRefId, OpenApiGeneratorV31, OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 import type { OpenAPIObject, SecuritySchemeObject } from "openapi3-ts/oas31";
+import type { FrameworkAdapter } from "../adapter/FrameworkAdapter.js";
+
 
 export type RestAPIBuilderConfig = {
   /**
-   * Disable checking of two or more Zod Schemas having the same ref name
+   * Fail if two or more Zod Schemas have the same ref name
    * applied to them via `.openapi(ref)`
    */
   failOnDuplicateSchemaRef: boolean
@@ -42,7 +43,7 @@ export class RestAPIBuilder {
    * have the same ref name assigned to them.
    * @private
    */
-  private schemaByRef: Record<string, ZodTypeAny> = {}
+  private schemaByRef: Record<string, z.ZodType> = {}
 
   private securitySchemeByName: Record<string, SecuritySchemeObject> = {}
 
@@ -79,16 +80,18 @@ export class RestAPIBuilder {
     this.title = title
     this.description = description
     this.version = version
-    this.config = _.merge(defaultConfig, configOverride || {})
+    this.config = mergeDeep(defaultConfig, configOverride ?? {}) as RestAPIBuilderConfig
   }
 
+  addEndpoint(endpoint: AnyRestEndpoint): void;
+  addEndpoint(endpointList: AnyRestEndpoint[]): void;
   addEndpoint(
     endpointOrList: AnyRestEndpoint | AnyRestEndpoint[]
   ) {
     const endpoints: AnyRestEndpoint[] = (Array.isArray(endpointOrList)) ? endpointOrList : [endpointOrList]
 
     endpoints.forEach((endpoint) => {
-      const routeKey = `${endpoint.method} ${endpoint.endpointDefinition.openApiPath}`
+      const routeKey = `${endpoint.method} ${endpoint.config.openApiPath}`
 
       if (this.routeSet.has(routeKey)) {
         throw new RestAPIBuilderError(`Endpoint for route "${routeKey}" already exists`)
@@ -100,16 +103,16 @@ export class RestAPIBuilder {
       }
 
       if (
-        endpoint.endpointDefinition.requestBodyReader instanceof JsonBodyReader
+        endpoint.config.requestBodyReader instanceof JsonBodyReader
       ) {
-        this.checkSchemaRef(endpoint.endpointDefinition.requestBodyReader.schema)
+        this.checkSchemaRef(endpoint.config.requestBodyReader.schema)
       }
 
       if (
-        endpoint.endpointDefinition.successResponseWriter instanceof JsonResponseWriter
-        || endpoint.endpointDefinition.successResponseWriter instanceof XMLResponseWriter
+        endpoint.config.successResponseWriter instanceof JsonResponseWriter
+        || endpoint.config.successResponseWriter instanceof XMLResponseWriter
       ) {
-        this.checkSchemaRef(endpoint.endpointDefinition.successResponseWriter.schema)
+        this.checkSchemaRef(endpoint.config.successResponseWriter.schema)
       }
 
       if (endpoint.authenticator.openApiDefinition) {
@@ -148,9 +151,15 @@ export class RestAPIBuilder {
     })
   }
 
+  bindEndpoints(adapter: FrameworkAdapter): void {
+    values(this.endpointByOperationId).forEach((endpoint) => {
+      adapter.registerEndpoint(endpoint)
+    })
+  }
+
   /**
    * The zod-to-openapi library auto-registers Zod schemas under `components/schemas` if a
-   * reference name has been specified via the `.openapi()`. However, instead of checking for
+   * reference name has been specified via the `.openapi()` method. However, instead of checking for
    * duplicate references in use for different schemas, they do some funky merging under the hood
    * and output that via "allOf" - while this is technically correct, using the same name for different
    * schemas is most likely a mistake, so it's better to highlight it to the developer.
@@ -158,12 +167,12 @@ export class RestAPIBuilder {
    * @param schema
    * @private
    */
-  private checkSchemaRef(schema: ZodTypeAny): void {
+  private checkSchemaRef(schema: z.ZodType): void {
     if (!this.config.failOnDuplicateSchemaRef) {
       return
     }
 
-    const ref = getOpenApiRef(schema)
+    const ref = getRefId(schema)
 
     if (ref) {
       if (this.schemaByRef[ref]) {
