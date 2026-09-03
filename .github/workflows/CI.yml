@@ -1,4 +1,4 @@
-name: Node Check
+name: Songbird CI
 
 on:
   push:
