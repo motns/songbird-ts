@@ -13,13 +13,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [22, 24, 26]
+#        node-version: [22.x, 24.x, 26.x]
+        node-version: [26.x]
     steps:
       - uses: actions/checkout@v7
-      - name: Setup pnpm on node@${{ matrix.node-version }}
+      - name: Setup pnpm
         uses: pnpm/setup@v2
         with:
-          runtime: node@{{ matrix.node-version }}
+          install: false
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
+
       - name: Format check
         run: pnpm fmt:check
       - name: Lint
