@@ -1,5 +1,7 @@
 # Songbird
 
+[![Songbird CI](https://github.com/motns/songbird-ts/actions/workflows/CI.yml/badge.svg)](https://github.com/motns/songbird-ts/actions/workflows/CI.yml)
+
 An opinionated library for building REST APIs with strictly enforced validation for all inputs and outputs, and native
 support for generating API documentation in [OpenAPI 3.1](https://swagger.io/specification/) format, using [zod-to-openapi](https://github.com/asteasolutions/zod-to-openapi). All path parameters, query parameters, cookies and other headers are parsed into JSON objects and are validated against the [Zod](https://zod.dev/) Schemas provided.
 
