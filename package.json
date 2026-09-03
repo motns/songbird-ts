@@ -50,5 +50,11 @@
   },
   "peerDependencies": {
     "zod": "^4.4.3"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.25.0"
+    }
   }
 }
